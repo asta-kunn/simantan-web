@@ -6,24 +6,8 @@ import { visualizer } from "rollup-plugin-visualizer";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
 
-  // Define base paths for each mode
-  const getBasePath = (mode) => {
-    switch (mode) {
-      case "master":
-        return "/";
-      case "develop":
-        return "/develop";
-      case "uat":
-        return "/uat";
-      case "localhost":
-        return "/";
-      default:
-        return env.VITE_PUBLIC_URL || "/";
-    }
-  };
-
   return {
-    base: getBasePath(mode),
+    base: env.VITE_PUBLIC_URL || "/",
 
     // Enhanced ESBuild configuration
     esbuild: {
@@ -58,17 +42,17 @@ export default defineConfig(({ mode }) => {
           display: "standalone",
           icons: [
             {
-              src: `${env.VITE_NODE_ENV === "master" ? "" : env.VITE_PUBLIC_URL}/innolife-logo.png`,
+              src: "innolife-logo.png",
               sizes: "192x192",
               type: "image/png",
             },
             {
-              src: `${env.VITE_NODE_ENV === "master" ? "" : env.VITE_PUBLIC_URL}/innolife-logo.png`,
+              src: "innolife-logo.png",
               sizes: "512x512",
               type: "image/png",
             },
             {
-              src: `${env.VITE_NODE_ENV === "master" ? "" : env.VITE_PUBLIC_URL}/vite.svg`,
+              src: "vite.svg",
               sizes: "any",
               type: "image/svg+xml",
             },
