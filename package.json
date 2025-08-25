@@ -2,6 +2,10 @@
   "name": "plm-web",
   "private": true,
   "version": "0.0.3",
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
+  },
   "scripts": {
     "dev": "vite --mode localhost",
     "start:dev": "vite --mode develop",
@@ -26,6 +30,8 @@
     "postbuild": "echo 'Build completed successfully!'"
   },
   "dependencies": {
+    "@emotion/babel-plugin": "^11.13.5",
+    "@emotion/react": "^11.14.0",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-accordion": "^1.2.3",

@@ -45,15 +45,6 @@ export default defineConfig(({ mode }) => {
       react({
         // Enable React Fast Refresh optimizations
         fastRefresh: true,
-        // Reduce bundle size by excluding dev helpers in master
-        ...(mode === "master" && {
-          jsxImportSource: "@emotion/react",
-          babel: {
-            plugins: [
-              ["@babel/plugin-transform-react-jsx", { runtime: "automatic" }],
-            ],
-          },
-        }),
       }),
 
       VitePWA({
