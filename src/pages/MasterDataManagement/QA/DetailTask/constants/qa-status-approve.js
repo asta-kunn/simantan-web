@@ -1,0 +1,7 @@
+const STATUS_APPROVE = {
+  COMPLETED: 'COMPLETED',
+  REJECTED: 'REJECT'
+}
+
+export default STATUS_APPROVE;
+

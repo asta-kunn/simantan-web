@@ -1,0 +1,11 @@
+input[type="radio"]:checked {
+    accent-color: #b32017 !important;
+}
+
+input[type="checkbox"] {
+    accent-color: #b32017 !important;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #b32017 !important;
+}
