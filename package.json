@@ -25,7 +25,7 @@
     "serve:dev": "cross-env NODE_ENV=develop node server.js",
     "serve:uat": "cross-env NODE_ENV=uat node server.js",
     "serve": "cross-env NODE_ENV=master node server.js",
-    "clean": "rm -rf dist node_modules/.vite",
+    "clean": "rimraf dist node_modules/.vite",
     "prebuild": "npm run clean",
     "postbuild": "echo 'Build completed successfully!'"
   },
