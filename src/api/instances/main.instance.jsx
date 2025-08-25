@@ -6,10 +6,7 @@ import { useUIStore } from "@/stores/uiStore";
 
 import { toast } from "sonner";
 
-const env = import.meta.env.MODE;
-const appName =
-  import.meta.env.VITE_APP_NAME +
-  (env === "master" ? "" : env.charAt(0).toUpperCase() + env.slice(1));
+const appName = import.meta.env.VITE_APP_NAME;
 
 const handleError = (error) => {
   // Handle response errors with detailed messages
@@ -57,7 +54,7 @@ const handleError = (error) => {
 const getUIStore = () => useUIStore.getState();
 
 const mainInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL_MAIN || "http://localhost:8080",
+  baseURL: import.meta.env.VITE_API_URL_MAIN,
   timeout: 120000,
   headers: {
     "Content-Type": "application/json",

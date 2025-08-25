@@ -31,7 +31,7 @@ const Settings = lazy(() => import("@/pages/Settings/index"));
 
 function App() {
   /** Const Declarations */
-  const environment = import.meta.env?.MODE || process.env.NODE_ENV;
+  const base = (import.meta.env?.VITE_PUBLIC_URL || "/").replace(/\/$/, "");
 
 
   /** Zustand State  */
@@ -95,21 +95,14 @@ function App() {
   };
 
 
-  const RouterWrapper = ({ children }) =>
-    environment === "master" || environment === "localhost" ? (
-      <BrowserRouter
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
-        {children}
-      </BrowserRouter>
-    ) : (
-      <BrowserRouter
-        basename={`/${environment}`}
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
-        {children}
-      </BrowserRouter>
-    );
+  const RouterWrapper = ({ children }) => (
+    <BrowserRouter
+      basename={base || "/"}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
+      {children}
+    </BrowserRouter>
+  );
 
   const queryClient = new QueryClient({
     defaultOptions: {
