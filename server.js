@@ -6,7 +6,7 @@ const { createServer } = require("http");
 const app = express();
 
 const NODE_ENV = process.env.NODE_ENV || "develop";
-const port = 8546;
+const port = process.env.PORT ? Number(process.env.PORT) : 8080;
 
 // Determine base path for static files based on NODE_ENV
 let basePath = "/";

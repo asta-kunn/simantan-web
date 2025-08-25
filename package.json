@@ -3,18 +3,18 @@
   "private": true,
   "version": "0.0.3",
   "engines": {
-    "node": "20.18.1",
-    "npm": "10.9.0"
+    "node": ">=20 <23"
   },
   "scripts": {
     "dev": "vite --mode localhost",
     "start:dev": "vite --mode develop",
     "start:uat": "vite --mode uat",
-    "start": "vite --mode master",
+    "start": "node server.js",
     "build:dev": "vite build --mode develop",
     "build:uat": "vite build --mode uat",
     "build:local": "vite build --mode localhost",
     "build": "vite build --mode master",
+    "heroku-postbuild": "npm run build",
     "build:analyze": "cross-env ANALYZE=true vite build --mode master",
     "build:fast": "vite build --mode master --minify false",
     "preview:dev": "vite preview --mode develop",
