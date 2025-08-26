@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.3",
   "engines": {
-    "node": "20.x"
+    "node": ">=20.x"
   },
   "scripts": {
     "dev": "vite --mode localhost",
@@ -105,6 +105,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
+    "@types/estree": "^1.0.8",
     "@types/react": "^18.3.12",
     "@vitejs/plugin-react-swc": "^3.7.2",
     "cross-env": "^7.0.3",
