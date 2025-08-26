@@ -9,7 +9,7 @@ import { useMutation } from "@/hooks/use-mutation";
 import { toast } from "@/hooks/use-toast";
 
 import LoginBanner from "@/assets/images/Login Banner.webp";
-import LoginIcon from "@/assets/images/Logo.png"
+import LoginIcon from "@/assets/images/logo.png"
 
 import { Loading } from "@/assets/animations/Loading";
 
