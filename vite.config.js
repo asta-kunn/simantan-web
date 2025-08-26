@@ -5,9 +5,25 @@ import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
+  const computeBaseFromMode = (mode) => {
+    if (env.VITE_PUBLIC_URL && env.VITE_PUBLIC_URL.length > 0) {
+      return env.VITE_PUBLIC_URL.endsWith("/")
+        ? env.VITE_PUBLIC_URL
+        : env.VITE_PUBLIC_URL + "/";
+    }
+    switch (mode) {
+      case "develop":
+        return "/develop/";
+      case "uat":
+        return "/uat/";
+      default:
+        return "/";
+    }
+  };
+  const base = computeBaseFromMode(mode);
 
   return {
-    base: env.VITE_PUBLIC_URL || "/",
+    base,
 
     // Enhanced ESBuild configuration
     esbuild: {
@@ -57,15 +73,9 @@ export default defineConfig(({ mode }) => {
               type: "image/svg+xml",
             },
           ],
-          id: (env.VITE_PUBLIC_URL || "/").endsWith("/")
-            ? env.VITE_PUBLIC_URL || "/"
-            : env.VITE_PUBLIC_URL || "/",
-          start_url: (env.VITE_PUBLIC_URL || "/").endsWith("/")
-            ? env.VITE_PUBLIC_URL || "/"
-            : env.VITE_PUBLIC_URL || "/",
-          scope: (env.VITE_PUBLIC_URL || "/").endsWith("/")
-            ? env.VITE_PUBLIC_URL || "/"
-            : env.VITE_PUBLIC_URL || "/",
+          id: base,
+          start_url: base,
+          scope: base,
           orientation: "portrait",
         },
         workbox: {

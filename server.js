@@ -61,6 +61,6 @@ const server = createServer(app);
 server.listen(port, () => {
   console.log("server started on port " + port);
   console.log(
-    `Access your app at http://innolife.dexagroup.com${basePath}`
+    `Access your app at https://simantan-5wc7q.ondigitalocean.app${basePath}`
   );
 });
