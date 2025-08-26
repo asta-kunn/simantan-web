@@ -6,10 +6,10 @@ import { visualizer } from "rollup-plugin-visualizer";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
   const computeBaseFromMode = (mode) => {
-    if (env.VITE_PUBLIC_URL && env.VITE_PUBLIC_URL.length > 0) {
-      return env.VITE_PUBLIC_URL.endsWith("/")
-        ? env.VITE_PUBLIC_URL
-        : env.VITE_PUBLIC_URL + "/";
+    const publicUrl = (env.VITE_PUBLIC_URL || "").trim();
+    // Treat "/" or empty as unset to allow per-mode base
+    if (publicUrl && publicUrl !== "/") {
+      return publicUrl.endsWith("/") ? publicUrl : publicUrl + "/";
     }
     switch (mode) {
       case "develop":
