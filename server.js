@@ -53,6 +53,10 @@ app.use(basePath, express.static(path.join(__dirname, "dist"), {
 app.use(basePath, express.static(path.join(__dirname, "public")));
 
 app.use(basePath, function (req, res) {
+  // Prevent caching of the SPA shell to avoid stale asset paths
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
