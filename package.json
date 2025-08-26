@@ -14,7 +14,7 @@
     "build:uat": "vite build --mode uat",
     "build:local": "vite build --mode localhost",
     "build": "vite build --mode master",
-    "heroku-postbuild": "npm run build",
+    "heroku-postbuild": "npm run build --mode master",
     "build:analyze": "cross-env ANALYZE=true vite build --mode master",
     "build:fast": "vite build --mode master --minify false",
     "preview:dev": "vite preview --mode develop",

@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-import logoInnolife from "@/assets/images/logo.png"
-import logoIconInnolife from "@/assets/images/logo.png"
+import logoInnolife from "@/assets/images/logo panjang.png"
+import logoIconInnolife from "@/assets/images/logo pendek.png"
 
 import { Divider } from "@/components/fields/Divider";
 import { Button } from "@/components/Dexain";

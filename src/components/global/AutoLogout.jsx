@@ -21,10 +21,16 @@ const AutoLogout = ({ logoutTime = 60 * 1000 }) => {
     // Clear any existing countdown
     if (countdownRef.current) clearInterval(countdownRef.current);
 
-    // Start a new countdown that logs each second
+    // Start a new countdown that logs less frequently
     countdownRef.current = setInterval(() => {
       secondsLeft -= 1;
-      console.log(`Auto logout in ${secondsLeft} seconds...`);
+
+      if (secondsLeft <= 30 && secondsLeft > 0) {
+        console.log(`Auto logout in ${secondsLeft} seconds...`);
+      } else if (secondsLeft > 0 && secondsLeft % 60 === 0) {
+        const minutesLeft = Math.floor(secondsLeft / 60);
+        console.log(`Auto logout in ${minutesLeft} minute${minutesLeft > 1 ? "s" : ""}...`);
+      }
 
       if (secondsLeft <= 0) {
         clearInterval(countdownRef.current);

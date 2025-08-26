@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, X } from "lucide-react";
 
-import logoInnolife from "@/assets/images/logo.png"
+import logoInnolife from "@/assets/images/logo panjang.png"
 import useGeneralStore from "@/stores/generalStore";
 import useAuthStore from "@/stores/authStore";
 

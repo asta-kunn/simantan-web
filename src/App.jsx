@@ -117,7 +117,7 @@ function App() {
   return (
     <RouterWrapper>
       <QueryClientProvider client={queryClient}>
-          <AutoLogout logoutTime={1 * 10 * 1000} />
+          <AutoLogout logoutTime={15 * 60 * 1000} />
           <UIProvider>
           <Suspense fallback={null}>
             <Routes>
