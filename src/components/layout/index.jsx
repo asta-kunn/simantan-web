@@ -28,7 +28,7 @@ const Layout = ({ children }) => {
 
   // Definisi path untuk setiap menu
   const menuPaths = {
-    dashboard: '/dashboard',
+    // dashboard: '/dashboard',
     newProductDevelopment: '/new-product-development',
     existingProductDevelopment: '/existing-product-development',
     productRegistration: '/product-registration',
@@ -37,7 +37,7 @@ const Layout = ({ children }) => {
   };
 
   const menuTitles = {
-    [menuPaths.dashboard]: 'Dashboard',
+    // [menuPaths.dashboard]: 'Dashboard',
     [menuPaths.newProductDevelopment]: 'New Product Development',
     [menuPaths.existingProductDevelopment]: 'Existing Product Improvement',
     [menuPaths.productRegistration]: 'Product Registration',
@@ -105,16 +105,7 @@ const Layout = ({ children }) => {
           {sidebarOpen && <h3 className="text-sm font-medium text-gray-500 mb-4 px-3">MENU</h3>}
 
           <nav className="space-y-2">
-            <Link
-              to={menuPaths.dashboard}
-              className={`flex items-center text-sm px-3 py-2 ${isMenuActive(menuPaths.dashboard)
-                ? 'border-l-2 bg-gradient-to-r from-primary-normal-100 to-white border-rose-600 text-primary-normal-600'
-                : 'text-gray-700 hover:bg-gray-100 rounded-md'} ${!sidebarOpen && 'justify-center'}`}
-            >
-              <LayoutDashboard className={`${sidebarOpen ? 'mr-3' : ''} h-5 w-5 ${isMenuActive(menuPaths.dashboard) ? 'text-primary-normal-600' : 'text-gray-500'}`} />
-              {sidebarOpen && "Dashboard"}
-            </Link>
-
+          
             <Link
               to={menuPaths.newProductDevelopment}
               className={`flex items-center text-sm px-3 py-2 ${isMenuActive(menuPaths.newProductDevelopment)

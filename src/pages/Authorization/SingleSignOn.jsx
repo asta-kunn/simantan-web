@@ -9,7 +9,7 @@ import { useMutation } from "@/hooks/use-mutation";
 import { toast } from "@/hooks/use-toast";
 
 import LoginBanner from "@/assets/images/Login Banner.webp";
-import LoginIcon from "@/assets/images/logo.png"
+import LoginIcon from "@/assets/images/logo.jpeg"
 
 import { Loading } from "@/assets/animations/Loading";
 
@@ -85,7 +85,7 @@ function SingleSignOn() {
             navigate(backUrl.startsWith("/") ? backUrl : `/${backUrl}`);
           }
         } else {
-          navigate("/dashboard");
+          navigate("/alsintan");
         }
       } else {
         setErrorMessage(response?.message);

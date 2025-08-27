@@ -23,7 +23,6 @@ const LoadingSpinner = () => (
 // Lazy load components with prefetch
 const LoginPage = lazy(() => import("./pages/Authorization/Login"));
 const Layout = lazy(() => import("@/layout"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Forbidden = lazy(() => import("./pages/Forbidden"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -87,7 +86,7 @@ function App() {
           console.error("Error decoding token:", e);
         }
       }
-      const first = Array.isArray(accessibleMenu) && accessibleMenu.length > 0 ? accessibleMenu[0] : "/dashboard";
+      const first = "/alsintan";
       return <Navigate to={first} replace />;
     }
 
@@ -136,8 +135,8 @@ function App() {
                   )
                 }
               >
-                {/* Not found route */}
-                <Route key="not-found" path="/" element={<Dashboard />} />
+                {/* Root redirects to Alsintan */}
+                <Route key="root-redirect" path="/" element={<Navigate to="/alsintan" replace />} />
                 <Route key="not-found" path="*" element={<NotFound />} />
 
                 {/* Dynamic routes from configuration */}

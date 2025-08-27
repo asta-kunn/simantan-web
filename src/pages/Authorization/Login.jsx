@@ -8,7 +8,7 @@ import authStore from "@/stores/authStore";
 import { useMutation } from "@/hooks/use-mutation";
 import { toast } from "@/hooks/use-toast";
 
-import LoginBanner from "@/assets/images/logo.png";
+import LoginBanner from "@/assets/images/logo.jpeg";
 
 import { Loading } from "@/assets/animations/Loading";
 
@@ -105,9 +105,9 @@ function LoginPage() {
           // If token is invalid, just continue to fallback
         }
       }
-      // If no valid token or not authorized, redirect to first accessible menu or dashboard
+      // If no valid token or not authorized, redirect to Alsintan
 
-      const firstMenu = accessibleMenu[0] || "/dashboard";
+      const firstMenu = "/alsintan";
       console.log(
         `[LoginPage] Redirecting to first accessible menu or dashboard: ${firstMenu}`
       );
@@ -141,13 +141,13 @@ function LoginPage() {
 
         // Build minimal menus for this small project (Dashboard + Alsintan)
         const minimalMenus = [
-          {
-            ID: "DASHBOARD",
-            NAME: "Dashboard",
-            URL: "/dashboard",
-            ICON: "bx bx-home-alt",
-            SUB_MENU: [],
-          },
+          // {
+          //   ID: "DASHBOARD",
+          //   NAME: "Dashboard",
+          //   URL: "/dashboard",
+          //   ICON: "bx bx-home-alt",
+          //   SUB_MENU: [],
+          // },
           {
             ID: "ALSINTAN",
             NAME: "Laporan Pemanfaatan & Kondisi Alsintan",
@@ -158,7 +158,7 @@ function LoginPage() {
         ];
 
         const minimalAccessibleMenu = [
-          "/dashboard",
+          // "/dashboard",
           "/alsintan",
           "/alsintan/input-apbn",
           "/alsintan/input-apbd",
@@ -194,8 +194,8 @@ function LoginPage() {
             // If token is invalid, just continue to fallback
           }
         }
-        // If no valid token or not authorized, redirect to dashboard
-        navigate("/dashboard");
+        // If no valid token or not authorized, redirect to Alsintan
+        navigate("/alsintan");
       } else {
         setErrorMessage(response?.message);
       }
@@ -266,11 +266,13 @@ function LoginPage() {
         {/* Left side with minimal design */}
         <div className="w-0 lg:w-1/2 p-2 transition-all duration-300">
           <div
-            className="w-full h-full rounded-l-xl bg-primary-normal bg-cover bg-center"
+            className="w-full h-full rounded-l-xl bg-primary-normal"
             style={{
               backgroundImage: `url(${LoginBanner})`,
-              backgroundSize: "cover",
+              backgroundSize: "100% 100%",
               backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+              objectFit: "fill"
             }}
           ></div>
         </div>

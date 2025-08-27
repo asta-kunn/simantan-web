@@ -2,7 +2,6 @@
 import { lazy } from "react";
 
 // Lazy imports for pages
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Approval = lazy(
   () => import("@/pages/ProductRegistration/Approval/index")
 );
@@ -142,13 +141,7 @@ const Menu = lazy(() => import("@/pages/Settings/MasterData/Menu/index"));
 // Route definitions
 export const allRoutes = [
   // Main
-  {
-    title: "Dashboard",
-    path: "/dashboard",
-    component: Dashboard,
-    exact: true,
-    protected: false,
-  },
+  
   // Alsintan Module
   {
     title: "Laporan Pemanfaatan dan Kondisi Alsintan",
