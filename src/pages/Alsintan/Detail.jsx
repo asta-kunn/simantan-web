@@ -222,7 +222,7 @@ const AlsintanDetail = () => {
       // Demo fallback: update UI as if success
       const now = new Date().toISOString();
       const newDocs = [
-        kondisiFile ? { document_id: Date.now(), documentUrl: "/kondisi_dummy.png", version: now, isCurrent: true, type: "KONDISI" } : null,
+        kondisiFile ? { document_id: Date.now(), documentUrl: "/kondisi_dummy.jpeg", version: now, isCurrent: true, type: "KONDISI" } : null,
         pemanfaatanFile ? { document_id: Date.now() + 1, documentUrl: "/pemanfaatan_dummy.pdf", version: now, isCurrent: true, type: "PEMANFAATAN" } : null,
       ].filter(Boolean);
       setDetail((prev) => ({
@@ -260,7 +260,7 @@ const AlsintanDetail = () => {
   const openDocPreview = async (doc) => {
     // Always preview local dummy file (no real API fetch)
     const isKondisi = doc?.type === "KONDISI";
-    const path = isKondisi ? "/kondisi_dummy.png" : "/pemanfaatan_dummy.pdf";
+    const path = isKondisi ? "/kondisi_dummy.jpeg" : "/pemanfaatan_dummy.pdf";
     try {
       const res = await fetch(path);
       const blob = await res.blob();
@@ -459,7 +459,7 @@ const AlsintanDetail = () => {
                   label="Upload Laporan Kondisi (JPG/PNG)"
                   type="file"
                   extensions={["jpg","jpeg","png"]}
-                  files={showKondisiExisting ? "/kondisi_dummy.png" : undefined}
+                  files={showKondisiExisting ? "/kondisi_dummy.jpeg" : undefined}
                   onDelete={() => { setShowKondisiExisting(false); setKondisiFile(null); }}
                   onChange={(file) => { setShowKondisiExisting(false); setKondisiFile(file); }}
                   required
