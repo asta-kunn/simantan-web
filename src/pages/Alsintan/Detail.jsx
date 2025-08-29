@@ -560,7 +560,7 @@ const AlsintanDetail = () => {
               </button>
             </div>
             <div className="flex-1 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
-              <ImagePreview blob={previewImage} className="max-h-full" />
+              <ImagePreview blob={previewImage} className="object-contain" />
             </div>
           </div>
         </div>
