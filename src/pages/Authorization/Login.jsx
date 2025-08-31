@@ -9,11 +9,50 @@ import { useMutation } from "@/hooks/use-mutation";
 import { toast } from "@/hooks/use-toast";
 
 import LoginBanner from "@/assets/images/logo.jpeg";
+import LoginVideo from "@/assets/images/video.mp4";
 
 import { Loading } from "@/assets/animations/Loading";
 
 /** Services */
 import { useLogin } from "@/hooks/auth/useAuth";
+
+/**
+ * Komponen untuk menampilkan video lokal sebagai background.
+ */
+const LoginVideoBackground = () => {
+  return (
+    <div
+      className="absolute inset-0 w-full h-full rounded-l-xl overflow-hidden z-0"
+      style={{
+        pointerEvents: "none", // biar ga bisa di klik
+        background: "#1a1a1a",
+      }}
+    >
+      <video
+        src={LoginVideo}
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="w-full h-full object-cover"
+        style={{
+          width: "100%",
+          height: "100%",
+          minHeight: "100%",
+          minWidth: "100%",
+          objectFit: "cover",
+        }}
+      />
+      {/* Overlay untuk efek gelap dan biar logo tetap kelihatan */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "rgba(0,0,0,0.25)",
+        }}
+      />
+    </div>
+  );
+};
 
 function LoginPage() {
   /** Navigation */
@@ -204,48 +243,6 @@ function LoginPage() {
     }
   };
 
-  // if (showWelcome) {
-  //   return (
-  //     <motion.div
-  //       className="fixed inset-0 bg-white flex flex-col items-center justify-center"
-  //       initial={{ opacity: 0 }}
-  //       animate={{ opacity: 1 }}
-  //       exit={{ opacity: 0, scale: 0.95 }}
-  //       transition={{ 
-  //         ease: [0.19, 1.0, 0.22, 1.0], 
-  //         duration: 0.3 
-  //       }}
-  //     >
-  //       <motion.div
-  //         className="space-y-1 text-center text-gray-900"
-  //         initial={{ scale: 0.5, opacity: 0 }}
-  //         animate={{ scale: 1, opacity: 1 }}
-  //         exit={{ scale: 0.8, opacity: 0 }}
-  //         transition={{ ease: "easeInOut", duration: 0.2 }}
-  //       >
-  //         <motion.h1
-  //           className="text-3xl font-bold"
-  //           initial={{ y: -20, opacity: 0 }}
-  //           animate={{ y: 0, opacity: 1 }}
-  //           exit={{ y: -10, opacity: 0 }}
-  //           transition={{ ease: "easeInOut", duration: 0.2, delay: 0.1 }}
-  //         >
-  //           Welcome
-  //         </motion.h1>
-  //         <motion.p
-  //           className="text-xl"
-  //           initial={{ y: -20, opacity: 0 }}
-  //           animate={{ y: 0, opacity: 1 }}
-  //           exit={{ y: 10, opacity: 0 }}
-  //           transition={{ ease: "easeInOut", duration: 0.2, delay: 0.2 }}
-  //         >
-  //           {username}
-  //         </motion.p>
-  //       </motion.div>
-  //     </motion.div>
-  //   );
-  // }
-
   // Show loading spinner while initializing
   if (isInitialLoading) {
     return (
@@ -263,18 +260,23 @@ function LoginPage() {
         exit={{ opacity: 0 }}
         className="min-h-screen flex bg-white relative overflow-hidden justify-center"
       >
-        {/* Left side with minimal design */}
-        <div className="w-0 lg:w-1/2 p-2 transition-all duration-300">
-          <div
-            className="w-full h-full rounded-l-xl bg-primary-normal"
-            style={{
-              backgroundImage: `url(${LoginBanner})`,
-              backgroundSize: "100% 100%",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-              objectFit: "fill"
-            }}
-          ></div>
+        {/* Left side with video background and logo centered in the middle */}
+        <div className="w-0 lg:w-1/2 p-2 transition-all duration-300 relative flex flex-col">
+          {/* Video background */}
+          <LoginVideoBackground />
+          {/* Logo centered and larger, taking full available space */}
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <img
+              src={LoginBanner}
+              alt="Login Banner"
+              className="w-full h-full rounded-xl"
+              style={{
+                objectFit: "contain",
+                background: "rgba(255,255,255,0.7)",
+                padding: "2.5rem",
+              }}
+            />
+          </div>
         </div>
 
         {/* Right side with login form */}
@@ -284,8 +286,6 @@ function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-md"
           >
-         
-
             <Form
               defaultValues={{
                 username: "",
