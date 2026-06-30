@@ -13,15 +13,20 @@ const AlsintanDetail = () => {
   const { addStack, closeStack, clearStacks } = useUIStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const id = location?.state?.id;
+  
+  // Menggunakan idPoktan dan masterData dari halaman List
+  const idPoktan = location?.state?.idPoktan;
   const type = location?.state?.type || "APBN";
+  const masterData = location?.state?.masterData || {};
 
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState(null);
+  
   const [savingPemanfaatan, setSavingPemanfaatan] = useState(false);
   const [uploadingLaporan, setUploadingLaporan] = useState(false);
   const [isEditingPemanfaatan, setIsEditingPemanfaatan] = useState(false);
   const [isEditingLaporan, setIsEditingLaporan] = useState(false);
+  
   const [pemanfaatanForm, setPemanfaatanForm] = useState({
     tanggalAwalPenggunaan: "",
     tanggalAkhirPenggunaan: "",
@@ -33,10 +38,12 @@ const AlsintanDetail = () => {
     pengguna: "",
     lokasi: ""
   });
+  
   const [laporanForm, setLaporanForm] = useState({
     documentUrlKondisi: "",
     documentUrlPemanfaatan: ""
   });
+  
   const [kondisiFile, setKondisiFile] = useState(null);
   const [pemanfaatanFile, setPemanfaatanFile] = useState(null);
   const [previewPdf, setPreviewPdf] = useState(null);
@@ -51,17 +58,7 @@ const AlsintanDetail = () => {
 
   const isPemanfaatanFilled = useMemo(() => {
     if (!detail) return false;
-    return (
-      !!detail.tanggalAwalPenggunaan ||
-      !!detail.tanggalAkhirPenggunaan ||
-      !!detail.totalAreaDikerjakan ||
-      !!detail.kondisiAlsintan ||
-      !!detail.jenisAlsintan ||
-      !!detail.merekAlsintan ||
-      !!detail.perawatanDilakukan ||
-      !!detail.pengguna ||
-      !!detail.lokasi
-    );
+    return !!detail.tanggalAwalPenggunaan; 
   }, [detail]);
 
   const isLaporanFilled = useMemo(() => {
@@ -70,10 +67,25 @@ const AlsintanDetail = () => {
   }, [detail]);
 
   const loadDetail = async () => {
-    if (!id) return;
+    if (!idPoktan) return;
     setLoading(true);
     try {
-      const res = await mainInstance.get(`/reports/${id}`);
+      // 1. Tambahkan validateStatus agar 404 tidak di-intercept oleh modal global
+      const res = await mainInstance.get(`/reports/${idPoktan}`, { 
+        params: { type },
+        validateStatus: (status) => {
+          // Anggap sukses jika status 2xx ATAU 404
+          return (status >= 200 && status < 300) || status === 404;
+        }
+      });
+
+      // 2. NestJS exception default menghasilkan object { statusCode: 404, message: "..." }
+      // Jika memang 404, kita lempar manual ke blok catch di bawah
+      if (res?.statusCode === 404 || res?.status === 404 || res?.error === "Not Found") {
+        throw new Error("Laporan kosong");
+      }
+
+      // 3. Jika data ditemukan, set state seperti biasa
       setDetail(res);
       setPemanfaatanForm({
         tanggalAwalPenggunaan: res?.tanggalAwalPenggunaan || "",
@@ -90,51 +102,68 @@ const AlsintanDetail = () => {
         documentUrlKondisi: res?.documentUrlKondisi || "",
         documentUrlPemanfaatan: res?.documentUrlPemanfaatan || ""
       });
+      
       setIsEditingPemanfaatan(!(res?.tanggalAwalPenggunaan));
       const hasAnyDoc = Array.isArray(res?.documents) && res.documents.length > 0;
       setIsEditingLaporan(!hasAnyDoc);
+
     } catch (e) {
-      // Fallback demo: if detail id tidak ditemukan, pakai id 2
-      try {
-        const fallback = await mainInstance.get(`/reports/2`);
-        setDetail(fallback);
-        setPemanfaatanForm({
-          tanggalAwalPenggunaan: fallback?.tanggalAwalPenggunaan || "",
-          tanggalAkhirPenggunaan: fallback?.tanggalAkhirPenggunaan || "",
-          totalAreaDikerjakan: fallback?.totalAreaDikerjakan || "",
-          kondisiAlsintan: fallback?.kondisiAlsintan || "",
-          jenisAlsintan: fallback?.jenisAlsintan || "",
-          merekAlsintan: fallback?.merekAlsintan || "",
-          perawatanDilakukan: fallback?.perawatanDilakukan || "",
-          pengguna: fallback?.pengguna || "",
-          lokasi: fallback?.lokasi || ""
-        });
-        setLaporanForm({
-          documentUrlKondisi: fallback?.documentUrlKondisi || "",
-          documentUrlPemanfaatan: fallback?.documentUrlPemanfaatan || ""
-        });
-        setIsEditingPemanfaatan(!(fallback?.tanggalAwalPenggunaan));
-      } catch (e2) {
-        // ignore
-      }
+      // HANDLE DATABASE KOSONG / 404 NOT FOUND
+      // Karena kita melempar error manual dari blok try, modal global tidak akan terpanggil
+      
+      setDetail({
+        idPoktan: idPoktan,
+        type: type,
+        kelurahanDesa: masterData?.kelurahanDesa || "-",
+        namaPoktan: masterData?.namaPoktan || "-",
+        ketuaPoktan: masterData?.ketuaPoktan || "-",
+        alamatSekretariat: masterData?.alamatSekretariat || "-",
+        documents: []
+      });
+
+      setPemanfaatanForm({
+        tanggalAwalPenggunaan: "",
+        tanggalAkhirPenggunaan: "",
+        totalAreaDikerjakan: "",
+        kondisiAlsintan: "",
+        jenisAlsintan: "",
+        merekAlsintan: "",
+        perawatanDilakukan: "",
+        pengguna: "",
+        lokasi: ""
+      });
+      
+      setLaporanForm({
+        documentUrlKondisi: "",
+        documentUrlPemanfaatan: ""
+      });
+
+      setIsEditingPemanfaatan(true);
+      setIsEditingLaporan(true);
+      
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!id) {
+    if (!idPoktan) {
       navigate(-1);
       return;
     }
     loadDetail();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [idPoktan]);
 
   const handleSavePemanfaatan = async () => {
     setSavingPemanfaatan(true);
     try {
+      // Menambahkan data master untuk keperluan UPSERT backend
       const payload = {
+        kelurahanDesa: masterData.kelurahanDesa,
+        namaPoktan: masterData.namaPoktan,
+        ketuaPoktan: masterData.ketuaPoktan,
+        alamatSekretariat: masterData.alamatSekretariat,
         tanggalAwalPenggunaan: pemanfaatanForm.tanggalAwalPenggunaan,
         tanggalAkhirPenggunaan: pemanfaatanForm.tanggalAkhirPenggunaan,
         totalAreaDikerjakan: Number(pemanfaatanForm.totalAreaDikerjakan),
@@ -145,7 +174,7 @@ const AlsintanDetail = () => {
         pengguna: pemanfaatanForm.pengguna,
         lokasi: pemanfaatanForm.lokasi
       };
-      const reportId = detail?.id ?? id;
+
       addStack({
         title: "Simpan Form Pemanfaatan?",
         description: "Pastikan data sudah benar, tindakan ini tidak dapat dibatalkan.",
@@ -158,7 +187,7 @@ const AlsintanDetail = () => {
         onConfirm: async () => {
           closeStack();
           try {
-            await mainInstance.patch(`/reports/${reportId}/form`, payload, { params: { type } });
+            await mainInstance.patch(`/reports/${idPoktan}/form`, payload, { params: { type } });
             await loadDetail();
             setIsEditingPemanfaatan(false);
             addStack({
@@ -168,7 +197,6 @@ const AlsintanDetail = () => {
               isConfirm: true,
             });
           } catch (err) {
-            // noop - fallback handled by backend
             clearStacks();
           }
         },
@@ -183,12 +211,16 @@ const AlsintanDetail = () => {
     if (!kondisiFile && !pemanfaatanFile) return;
     setUploadingLaporan(true);
     try {
-      // Dummy schema: fixed JSON payload
+      // Payload menggunakan file dummy lokal dari folder public/
       const payload = {
-        documentUrlKondisi: "https://contoh1.com/dokumen/laporan_kondisi.pdf",
-        documentUrlPemanfaatan: "https://contoh1.com/dokumen/laporan_kondisi.pdf",
+        kelurahanDesa: masterData?.kelurahanDesa || "-",
+        namaPoktan: masterData?.namaPoktan || "-",
+        ketuaPoktan: masterData?.ketuaPoktan || "-",
+        alamatSekretariat: masterData?.alamatSekretariat || "-",
+        documentUrlKondisi: "/kondisi_dummy.jpeg",
+        documentUrlPemanfaatan: "/pemanfaatan_dummy.pdf",
       };
-      const reportId2 = detail?.id ?? id;
+      
       addStack({
         title: "Kirim Laporan?",
         description: "Pastikan file yang Anda unggah sudah benar.",
@@ -201,8 +233,11 @@ const AlsintanDetail = () => {
         onConfirm: async () => {
           closeStack();
           try {
-            await mainInstance.patch(`/reports/${reportId2}/laporan`, payload, { params: { type }, headers: { "Content-Type": "application/json" } });
+            await mainInstance.patch(`/reports/${idPoktan}/laporan`, payload, { params: { type }, headers: { "Content-Type": "application/json" } });
+            
+            // Jika berhasil, panggil ulang data dari database
             await loadDetail();
+            
             setKondisiFile(null);
             setPemanfaatanFile(null);
             setIsEditingLaporan(false);
@@ -213,30 +248,32 @@ const AlsintanDetail = () => {
               isConfirm: true,
             });
           } catch (err) {
-            // UI fallback handled below
-            clearStacks()
+            // FALLBACK UI: Jika API error/mati, kita paksa UI update menggunakan dummy lokal
+            clearStacks();
+            const now = new Date().toISOString();
+            const newDocs = [
+              kondisiFile ? { document_id: Date.now(), documentUrl: "/kondisi_dummy.jpeg", version: now, isCurrent: true, type: "KONDISI" } : null,
+              pemanfaatanFile ? { document_id: Date.now() + 1, documentUrl: "/pemanfaatan_dummy.pdf", version: now, isCurrent: true, type: "PEMANFAATAN" } : null,
+            ].filter(Boolean);
+            
+            setDetail((prev) => ({
+              ...prev,
+              documents: Array.isArray(prev?.documents)
+                ? [
+                    ...newDocs,
+                    ...prev.documents.map((d) => ({ ...d, isCurrent: false })),
+                  ]
+                : newDocs,
+            }));
+            
+            setKondisiFile(null);
+            setPemanfaatanFile(null);
+            setIsEditingLaporan(false);
           }
         },
       });
     } catch (e) {
-      // Demo fallback: update UI as if success
-      const now = new Date().toISOString();
-      const newDocs = [
-        kondisiFile ? { document_id: Date.now(), documentUrl: "/kondisi_dummy.jpeg", version: now, isCurrent: true, type: "KONDISI" } : null,
-        pemanfaatanFile ? { document_id: Date.now() + 1, documentUrl: "/pemanfaatan_dummy.pdf", version: now, isCurrent: true, type: "PEMANFAATAN" } : null,
-      ].filter(Boolean);
-      setDetail((prev) => ({
-        ...prev,
-        documents: Array.isArray(prev?.documents)
-          ? [
-              ...newDocs,
-              ...prev.documents.map((d) => ({ ...d, isCurrent: false })),
-            ]
-          : newDocs,
-      }));
-      setKondisiFile(null);
-      setPemanfaatanFile(null);
-      setIsEditingLaporan(false);
+      setUploadingLaporan(false);
     } finally {
       setUploadingLaporan(false);
     }
@@ -258,7 +295,6 @@ const AlsintanDetail = () => {
   }, [isEditingLaporan, currentKondisi, currentPemanfaatan]);
 
   const openDocPreview = async (doc) => {
-    // Always preview local dummy file (no real API fetch)
     const isKondisi = doc?.type === "KONDISI";
     const path = isKondisi ? "/kondisi_dummy.jpeg" : "/pemanfaatan_dummy.pdf";
     try {

@@ -1,30 +1,37 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Table, Select, Input, Button } from "@/components/Dexain";
+import { Table, Select, Button } from "@/components/Dexain";
 import mainInstance from "@/api/instances/main.instance";
 import { Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const PROVINSI = "Jawa Barat";
-const KABUPATEN = "Bogor";
-
-// Use backend proxy to avoid CORS
 const API_BASE = import.meta.env.VITE_API_URL_MAIN || "http://localhost:8080";
-const DISTRICTS_URL = `${API_BASE}/wilayah/districts`;
-const VILLAGES_URL = (districtCode) => `${API_BASE}/wilayah/villages/${districtCode}`;
+const PROVINSI_URL = `${API_BASE}/wilayah/provinsi`;
+const KABUPATEN_URL = (provId) => `${API_BASE}/wilayah/kabupaten/${provId}`;
+const KECAMATAN_URL = (kabId) => `${API_BASE}/wilayah/kecamatan/${kabId}`;
+const POKTAN_URL = (provId, kabId, kecId) => `${API_BASE}/wilayah/poktan/${provId}/${kabId}/${kecId}`;
 
-const AlsintanAPBN = () => {
+const AlsintanAPBN = () => { // Ganti jadi AlsintanAPBD di file APBD
   const [filters, setFilters] = useState({
-    provinsi: PROVINSI,
-    kabupaten: KABUPATEN,
+    provinsi: "",
+    kabupaten: "",
     kecamatan: "",
     kelurahan: "",
   });
 
   const [data, setData] = useState([]);
+  const [allPoktanData, setAllPoktanData] = useState([]); 
   const [loading, setLoading] = useState(false);
-  const [districtOptions, setDistrictOptions] = useState([]);
+  
+  // States untuk opsi dropdown
+  const [provinsiOptions, setProvinsiOptions] = useState([]);
+  const [kabupatenOptions, setKabupatenOptions] = useState([]);
+  const [kecamatanOptions, setKecamatanOptions] = useState([]);
   const [villageOptions, setVillageOptions] = useState([]);
-  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  
+  // States untuk loading dropdown
+  const [loadingProvinsi, setLoadingProvinsi] = useState(false);
+  const [loadingKabupaten, setLoadingKabupaten] = useState(false);
+  const [loadingKecamatan, setLoadingKecamatan] = useState(false);
   const [loadingVillages, setLoadingVillages] = useState(false);
 
   const navigate = useNavigate();
@@ -44,12 +51,17 @@ const AlsintanAPBN = () => {
       icon: <Eye className="w-4 h-4" />,
       buttonVariant: 'ghost',
       onClick: (row) => {
-        const detailId = row?.id ?? row?.ID ?? row?.reportId ?? row?.REPORT_ID;
-        if (!detailId) {
-          alert("ID detail tidak tersedia dari data list. Pastikan API list mengembalikan field 'id'.");
+        if (!row?.idPoktan) {
+          alert("ID Poktan tidak tersedia.");
           return;
         }
-        navigate("/alsintan/detail", { state: { id: detailId, type: "APBN" } });
+        navigate("/alsintan/detail", { 
+          state: { 
+            idPoktan: row.idPoktan, 
+            type: "APBN", // Ganti "APBD" di file APBD
+            masterData: row 
+          } 
+        });
       },
     },
   ], []);
@@ -60,12 +72,30 @@ const AlsintanAPBN = () => {
     try {
       const result = await mainInstance.get("/reports", {
         params: {
-          type: "APBN",
+          type: "APBN", // Ganti "APBD" di file APBD
           kel_desa: filters.kelurahan,
         },
       });
-      console.log("ini result", result)
-      setData(Array.isArray(result) ? result : result?.data || []);
+      
+      const localReports = Array.isArray(result) ? result : result?.data || [];
+      
+      const filteredScraped = allPoktanData.filter(
+        p => p.desa.toUpperCase() === filters.kelurahan.toUpperCase()
+      );
+
+      const mergedData = filteredScraped.map(scraped => {
+        const foundInDb = localReports.find(db => db.idPoktan === scraped.id_poktan);
+        return {
+          kelurahanDesa: scraped.desa,
+          idPoktan: scraped.id_poktan,
+          namaPoktan: scraped.nama_poktan,
+          ketuaPoktan: scraped.ketua_poktan,
+          alamatSekretariat: scraped.alamat,
+          status: foundInDb ? foundInDb.status : "Pending"
+        };
+      });
+
+      setData(mergedData);
     } catch (e) {
       setData([]);
     } finally {
@@ -73,80 +103,158 @@ const AlsintanAPBN = () => {
     }
   };
 
-  // Load kecamatan on mount
+  // 1. Load Provinsi saat pertama kali render
   useEffect(() => {
-    const loadDistricts = async () => {
-      setLoadingDistricts(true);
+    const loadProvinsi = async () => {
+      setLoadingProvinsi(true);
       try {
-        const res = await fetch(DISTRICTS_URL);
+        const res = await fetch(PROVINSI_URL);
         const json = await res.json();
-        const options = (json?.data || []).map((d) => ({ label: d.name, value: d.code }));
-        setDistrictOptions(options);
+        const options = (json || []).map((d) => ({ label: d.name, value: d.id }));
+        setProvinsiOptions(options);
       } catch (e) {
-        setDistrictOptions([]);
+        setProvinsiOptions([]);
       } finally {
-        setLoadingDistricts(false);
+        setLoadingProvinsi(false);
       }
     };
-    loadDistricts();
+    loadProvinsi();
   }, []);
 
-  // Load kelurahan when kecamatan selected
+  // 2. Load Kabupaten ketika Provinsi dipilih
   useEffect(() => {
-    const loadVillages = async () => {
-      if (!filters.kecamatan) {
+    const loadKabupaten = async () => {
+      if (!filters.provinsi) {
+        setKabupatenOptions([]);
+        return;
+      }
+      setLoadingKabupaten(true);
+      try {
+        const res = await fetch(KABUPATEN_URL(filters.provinsi));
+        const json = await res.json();
+        const options = (json || []).map((d) => ({ label: d.name, value: d.id }));
+        setKabupatenOptions(options);
+      } catch (e) {
+        setKabupatenOptions([]);
+      } finally {
+        setLoadingKabupaten(false);
+      }
+    };
+    
+    // Reset dropdown di bawahnya setiap kali hirarki atas berubah
+    setFilters((f) => ({ ...f, kabupaten: "", kecamatan: "", kelurahan: "" }));
+    loadKabupaten();
+  }, [filters.provinsi]);
+
+  // 3. Load Kecamatan ketika Kabupaten dipilih
+  useEffect(() => {
+    const loadKecamatan = async () => {
+      if (!filters.kabupaten) {
+        setKecamatanOptions([]);
+        return;
+      }
+      setLoadingKecamatan(true);
+      try {
+        const res = await fetch(KECAMATAN_URL(filters.kabupaten));
+        const json = await res.json();
+        const options = (json || []).map((d) => ({ label: d.name, value: d.id }));
+        setKecamatanOptions(options);
+      } catch (e) {
+        setKecamatanOptions([]);
+      } finally {
+        setLoadingKecamatan(false);
+      }
+    };
+    
+    // Reset dropdown di bawahnya
+    setFilters((f) => ({ ...f, kecamatan: "", kelurahan: "" }));
+    loadKecamatan();
+  }, [filters.kabupaten]);
+
+  // 4. Load Kelurahan/Desa dan Data Poktan ketika Kecamatan dipilih
+  useEffect(() => {
+    const loadPoktanAndVillages = async () => {
+      if (!filters.kecamatan || !filters.kabupaten || !filters.provinsi) {
         setVillageOptions([]);
+        setAllPoktanData([]);
         return;
       }
       setLoadingVillages(true);
       try {
-        const res = await fetch(VILLAGES_URL(filters.kecamatan));
+        const res = await fetch(POKTAN_URL(filters.provinsi, filters.kabupaten, filters.kecamatan));
         const json = await res.json();
-        const options = (json?.data || []).map((v) => ({ label: v.name, value: (v.name || "").toUpperCase() }));
+        
+        setAllPoktanData(json || []);
+        
+        const uniqueVillages = [...new Set((json || []).map(p => p.desa))];
+        const options = uniqueVillages.map(v => ({ label: v, value: v.toUpperCase() }));
+        
         setVillageOptions(options);
       } catch (e) {
         setVillageOptions([]);
+        setAllPoktanData([]);
       } finally {
         setLoadingVillages(false);
       }
     };
-    // reset kelurahan on kecamatan change
+    
+    // Reset dropdown kelurahan
     setFilters((f) => ({ ...f, kelurahan: "" }));
-    loadVillages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.kecamatan]);
+    loadPoktanAndVillages();
+  }, [filters.kecamatan, filters.kabupaten, filters.provinsi]);
 
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Input Laporan Pemanfaatan & Kondisi Alsintan APBN</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-        <Input label="Provinsi" value={filters.provinsi} disabled readOnly />
-        <Input label="Kabupaten" value={filters.kabupaten} disabled readOnly />
+        <Select
+          label="Provinsi"
+          options={provinsiOptions}
+          placeholder="Pilih Provinsi"
+          value={filters.provinsi}
+          onChange={(val) => setFilters((f) => ({ ...f, provinsi: val }))}
+          searchable
+          loading={loadingProvinsi}
+          required
+        />
+        <Select
+          label="Kabupaten"
+          options={kabupatenOptions}
+          placeholder="Pilih Kabupaten"
+          value={filters.kabupaten}
+          onChange={(val) => setFilters((f) => ({ ...f, kabupaten: val }))}
+          searchable
+          loading={loadingKabupaten}
+          disabled={!filters.provinsi}
+          required
+        />
         <Select
           label="Kecamatan"
-          options={districtOptions}
-          placeholder="Pilih kecamatan"
+          options={kecamatanOptions}
+          placeholder="Pilih Kecamatan"
           value={filters.kecamatan}
           onChange={(val) => setFilters((f) => ({ ...f, kecamatan: val }))}
           searchable
-          loading={loadingDistricts}
+          loading={loadingKecamatan}
+          disabled={!filters.kabupaten}
           required
         />
         <Select
           label="Kelurahan / Desa"
           options={villageOptions}
-          placeholder="Pilih kelurahan/desa"
+          placeholder="Pilih Kelurahan/Desa"
           value={filters.kelurahan}
           onChange={(val) => setFilters((f) => ({ ...f, kelurahan: val }))}
           searchable
           loading={loadingVillages}
+          disabled={!filters.kecamatan}
           required
         />
       </div>
 
       <div className="flex justify-end mb-3">
-        <Button onClick={fetchData}>Cari</Button>
+        <Button onClick={fetchData} disabled={!filters.kelurahan}>Cari</Button>
       </div>
 
       <Table
