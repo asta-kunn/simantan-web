@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 
 import authStore from "@/stores/authStore";
-import { useMutation } from "@/hooks/use-mutation";
 import { toast } from "@/hooks/use-toast";
 
 import LoginBanner from "@/assets/images/logo.jpeg";
@@ -14,17 +13,15 @@ import LoginVideo from "@/assets/images/video.mp4";
 import { Loading } from "@/assets/animations/Loading";
 
 /** Services */
-import { useLogin } from "@/hooks/auth/useAuth";
+// Pastikan useSignup sudah diexport dari file ini
+import { useLogin, useSignup } from "@/hooks/auth/useAuth";
 
-/**
- * Komponen untuk menampilkan video lokal sebagai background.
- */
 const LoginVideoBackground = () => {
   return (
     <div
       className="absolute inset-0 w-full h-full rounded-l-xl overflow-hidden z-0"
       style={{
-        pointerEvents: "none", // biar ga bisa di klik
+        pointerEvents: "none",
         background: "#1a1a1a",
       }}
     >
@@ -43,7 +40,6 @@ const LoginVideoBackground = () => {
           objectFit: "cover",
         }}
       />
-      {/* Overlay untuk efek gelap dan biar logo tetap kelihatan */}
       <div
         className="absolute inset-0"
         style={{
@@ -60,190 +56,151 @@ function LoginPage() {
 
   /** Hooks */
   const { mutateAsync: loginMutation, isLoading: isLoginLoading, error: loginError } = useLogin();
+  // Tambahkan hook signup
+  const { mutateAsync: signupMutation, isLoading: isSignupLoading, error: signupError } = useSignup();
 
   /** Store */
   const user = authStore((state) => state.user);
-  const accessibleMenu = authStore((state) => state.accessibleMenu);
   const isAuthenticated = authStore((state) => state.isAuthenticated);
   const setSessionData = authStore((state) => state.setSessionData);
-  const setUserTypeData = authStore((state) => state.setUserTypeData);
 
   /** States */
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [username, setUsername] = useState("");
-
-  // For token-based redirect after login
-  const [authorizedUser, setAuthorizedUser] = useState([]);
-  const [url, setUrl] = useState("");
-  const [parameter, setParameter] = useState("");
+  const [isLoginMode, setIsLoginMode] = useState(true); // State untuk toggle form
 
   // Use a ref to track if the effect has already run
   const effectRan = useRef(false);
 
   // --- REDIRECT LOGIC ON PAGE LOAD ---
   useEffect(() => {
-    // Add logging for each process
-    if (effectRan.current) {
-      console.log("[LoginPage] Effect already ran, skipping.");
-      return;
-    }
+    if (effectRan.current) return;
     effectRan.current = true;
-    console.log("[LoginPage] Effect running for the first time.");
 
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
-    console.log(
-      "[LoginPage] isAuthenticated:",
-      isAuthenticated,
-      "| token:",
-      token
-    );
 
     if (isAuthenticated) {
       if (token) {
         try {
           const decoded = atob(token);
-          console.log("[LoginPage] Decoded token:", decoded);
           const { authorizedUser, url, parameter } = JSON.parse(decoded);
-          console.log("[LoginPage] Token contents:", {
-            authorizedUser,
-            url,
-            parameter,
-          });
 
-          // If user is in authorizedUser, redirect to url (with parameter if present)
           if (
             Array.isArray(authorizedUser) &&
             authorizedUser.length > 0 &&
             authorizedUser.includes(user.LOGIN_ID)
           ) {
-            console.log(
-              `[LoginPage] User ${user.LOGIN_ID} is authorized for redirect.`
-            );
             if (/^https?:\/\//.test(url)) {
-              console.log(`[LoginPage] Redirecting to external URL: ${url}`);
               window.location.href = url;
             } else {
               const navUrl = url?.startsWith("/") ? url : `/${url}`;
-              console.log(
-                `[LoginPage] Redirecting to internal URL: ${navUrl} with parameter:`,
-                parameter
-              );
               navigate(navUrl, parameter ? { state: parameter } : undefined);
             }
             return;
-          } else {
-            console.log(
-              `[LoginPage] User ${user.LOGIN_ID} is NOT in authorizedUser list.`
-            );
           }
         } catch (e) {
-          console.log("[LoginPage] Error decoding or parsing token:", e);
-          // If token is invalid, just continue to fallback
+          console.log("[LoginPage] Error decoding token:", e);
         }
       }
-      // If no valid token or not authorized, redirect to Alsintan
-
-      const firstMenu = "/alsintan";
-      console.log(
-        `[LoginPage] Redirecting to first accessible menu or dashboard: ${firstMenu}`
-      );
-      navigate(firstMenu);
-    } else {
-      console.log("[LoginPage] Not authenticated, showing login form.");
+      navigate("/alsintan");
     }
 
-    // Set loading to false after authentication logic completes
     setIsInitialLoading(false);
-  }, [isAuthenticated, window.location.search, navigate, user]);
+  }, [isAuthenticated, navigate, user]);
 
-  // --- LOGIN SUBMIT LOGIC ---
+  // --- SUBMIT LOGIC (LOGIN & SIGNUP) ---
   const handleSubmit = async (values) => {
     setErrorMessage("");
-    let response = null;
     try {
       const payload = {
         username: values.username,
         password: values.password,
       };
-      response = await loginMutation(payload);
 
-      if (response?.access_token) {
-        const ACCESS_TOKEN = response.access_token;
-        const REFRESH_TOKEN = null;
-        const ACCESSIBLE_CARD = null;
+      if (isLoginMode) {
+        // PROSES LOGIN
+        const response = await loginMutation(payload);
 
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get("token");
+        if (response?.access_token) {
+          const ACCESS_TOKEN = response.access_token;
+          const REFRESH_TOKEN = null;
+          const ACCESSIBLE_CARD = null;
 
-        // Build minimal menus for this small project (Dashboard + Alsintan)
-        const minimalMenus = [
-          // {
-          //   ID: "DASHBOARD",
-          //   NAME: "Dashboard",
-          //   URL: "/dashboard",
-          //   ICON: "bx bx-home-alt",
-          //   SUB_MENU: [],
-          // },
-          {
-            ID: "ALSINTAN",
-            NAME: "Laporan Pemanfaatan & Kondisi Alsintan",
-            URL: "/alsintan",
-            ICON: "bx bx-spreadsheet",
-            SUB_MENU: [],
-          },
-        ];
+          const minimalMenus = [
+            {
+              ID: "ALSINTAN",
+              NAME: "Laporan Pemanfaatan & Kondisi Alsintan",
+              URL: "/alsintan",
+              ICON: "bx bx-spreadsheet",
+              SUB_MENU: [],
+            },
+          ];
 
-        const minimalAccessibleMenu = [
-          // "/dashboard",
-          "/alsintan",
-          "/alsintan/input-apbn",
-          "/alsintan/input-apbd",
-        ];
+          const minimalAccessibleMenu = [
+            "/alsintan",
+            "/alsintan/input-apbn",
+            "/alsintan/input-apbd",
+          ];
 
-        setSessionData(
-          ACCESS_TOKEN,
-          REFRESH_TOKEN,
-          minimalMenus,
-          minimalAccessibleMenu,
-          ACCESSIBLE_CARD
-        );
+          setSessionData(
+            ACCESS_TOKEN,
+            REFRESH_TOKEN,
+            minimalMenus,
+            minimalAccessibleMenu,
+            ACCESSIBLE_CARD
+          );
 
-        if (token) {
-          try {
-            const decoded = atob(token);
-            const { authorizedUser, url, parameter } = JSON.parse(decoded);
+          const params = new URLSearchParams(window.location.search);
+          const token = params.get("token");
 
-            if (
-              Array.isArray(authorizedUser) &&
-              authorizedUser.length > 0 &&
-              authorizedUser.includes(values.username)
-            ) {
-              if (/^https?:\/\//.test(url)) {
-                window.location.href = url;
-              } else {
-                const navUrl = url?.startsWith("/") ? url : `/${url}`;
-                navigate(navUrl, parameter ? { state: parameter } : undefined);
+          if (token) {
+            try {
+              const decoded = atob(token);
+              const { authorizedUser, url, parameter } = JSON.parse(decoded);
+              if (Array.isArray(authorizedUser) && authorizedUser.includes(values.username)) {
+                if (/^https?:\/\//.test(url)) {
+                  window.location.href = url;
+                } else {
+                  const navUrl = url?.startsWith("/") ? url : `/${url}`;
+                  navigate(navUrl, parameter ? { state: parameter } : undefined);
+                }
+                return;
               }
-              return;
-            }
-          } catch (e) {
-            // If token is invalid, just continue to fallback
+            } catch (e) {}
           }
+          navigate("/alsintan");
+        } else {
+          setErrorMessage(response?.message || "Login failed");
         }
-        // If no valid token or not authorized, redirect to Alsintan
-        navigate("/alsintan");
       } else {
-        setErrorMessage(response?.message);
+      // PROSES SIGNUP
+      const response = await signupMutation(payload);
+
+      // Jika API NestJS kamu mengembalikan object atau status sukses tertentu, 
+      // kamu bisa sesuaikan kondisi if di bawah ini (misal: response atau response?.success)
+      if (response) {
+        toast({
+          title: "Pendaftaran Berhasil!",
+          description: "Silakan login menggunakan akun yang baru dibuat.",
+          variant: "success"
+        });
+        
+        // Pastikan ini dieksekusi agar form berubah kembali ke mode Login
+        setIsLoginMode(true); 
+      } else {
+        setErrorMessage("Gagal mendaftar. Silakan coba lagi.");
       }
+    }
     } catch (error) {
-      setErrorMessage("Username or password is invalid");
+      setErrorMessage(
+        isLoginMode 
+          ? "Username or password is invalid" 
+          : "Gagal mendaftar, username mungkin sudah dipakai"
+      );
     }
   };
 
-  // Show loading spinner while initializing
   if (isInitialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -251,6 +208,10 @@ function LoginPage() {
       </div>
     );
   }
+
+  // Gabungkan error message
+  const currentError = errorMessage || (isLoginMode ? loginError : signupError);
+  const isLoading = isLoginMode ? isLoginLoading : isSignupLoading;
 
   return (
     <AnimatePresence mode="wait">
@@ -260,11 +221,8 @@ function LoginPage() {
         exit={{ opacity: 0 }}
         className="min-h-screen flex bg-white relative overflow-hidden justify-center"
       >
-        {/* Left side with video background and logo centered in the middle */}
         <div className="w-0 lg:w-1/2 p-2 transition-all duration-300 relative flex flex-col">
-          {/* Video background */}
           <LoginVideoBackground />
-          {/* Logo centered and larger, taking full available space */}
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <img
               src={LoginBanner}
@@ -279,71 +237,91 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* Right side with login form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center transition-all duration-300 min-w-[500px] max-w-[50%]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-md"
           >
+            {/* Header Form Dinamis */}
+            <div className="mb-6 text-center">
+              <h1 className="text-2xl font-bold text-gray-800">
+                {isLoginMode ? "Selamat Datang" : "Daftar Akun Baru"}
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">
+                {isLoginMode ? "Silakan login ke akun Anda" : "Lengkapi data untuk mendaftar"}
+              </p>
+            </div>
+
             <Form
-              defaultValues={{
-                username: "",
-                password: "",
-              }}
+              defaultValues={{ username: "", password: "" }}
               validation={z.object({
-                username: z.string().min(1, "username cannot be empty"),
-                password: z.string().min(1, "password cannot be empty"),
+                username: z.string().min(1, "Username tidak boleh kosong"),
+                password: z.string().min(1, "Password tidak boleh kosong"),
               })}
               onSubmit={handleSubmit}
             >
               <AnimatePresence>
-                {loginError ||
-                  (errorMessage && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="mb-4 p-3 rounded-lg border border-primary-normal"
-                    >
-                      <p className="text-sm text-primary-normal font-medium">
-                        {errorMessage || loginError}
-                      </p>
-                    </motion.div>
-                  ))}
+                {currentError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mb-4 p-3 rounded-lg border border-red-300 bg-red-50"
+                  >
+                    <p className="text-sm text-red-600 font-medium">
+                      {currentError.toString()}
+                    </p>
+                  </motion.div>
+                )}
               </AnimatePresence>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Input
                   label="Username"
                   name="username"
                   type="text"
-                  placeholder="Your username"
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 focus:ring-gray-400"
+                  placeholder="Masukkan username"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-normal"
                 />
                 <Input
                   label="Password"
                   name="password"
                   type="password"
-                  placeholder="Your password"
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 focus:ring-gray-400"
+                  placeholder="Masukkan password"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-normal"
                 />
               </div>
 
               <Button
                 type="submit"
-                disabled={isLoginLoading}
-                className="w-full mt-3 py-3 px-4 bg-primary-normal text-white rounded-lg font-medium hover:bg-primary-normal/90 transition-colors disabled:opacity-50"
+                disabled={isLoading}
+                className="w-full mt-6 py-3 px-4 bg-primary-normal text-white rounded-lg font-medium hover:bg-primary-normal/90 transition-colors disabled:opacity-50"
               >
-                {isLoginLoading ? (
-                  <>
-                    <Loading className="pb-2" />
-                  </>
-                ) : (
+                {isLoading ? (
+                  <Loading className="pb-2" />
+                ) : isLoginMode ? (
                   "Login"
+                ) : (
+                  "Daftar"
                 )}
               </Button>
             </Form>
+
+            {/* Toggle Button untuk pindah mode Sign Up <-> Login */}
+            <div className="mt-6 text-center text-sm text-gray-600">
+              {isLoginMode ? "Belum punya akun? " : "Sudah punya akun? "}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLoginMode(!isLoginMode);
+                  setErrorMessage(""); // Reset error saat ganti mode
+                }}
+                className="text-primary-normal font-semibold hover:underline focus:outline-none"
+              >
+                {isLoginMode ? "Daftar di sini" : "Login di sini"}
+              </button>
+            </div>
           </motion.div>
         </div>
       </motion.div>
