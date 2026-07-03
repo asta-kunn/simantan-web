@@ -9,21 +9,15 @@ import { toast } from "@/hooks/use-toast";
 
 import LoginBanner from "@/assets/images/logo.jpeg";
 import LoginVideo from "@/assets/images/video.mp4";
-
 import { Loading } from "@/assets/animations/Loading";
 
-/** Services */
-// Pastikan useSignup sudah diexport dari file ini
 import { useLogin, useSignup } from "@/hooks/auth/useAuth";
 
 const LoginVideoBackground = () => {
   return (
     <div
       className="absolute inset-0 w-full h-full rounded-l-xl overflow-hidden z-0"
-      style={{
-        pointerEvents: "none",
-        background: "#1a1a1a",
-      }}
+      style={{ pointerEvents: "none", background: "#1a1a1a" }}
     >
       <video
         src={LoginVideo}
@@ -40,166 +34,190 @@ const LoginVideoBackground = () => {
           objectFit: "cover",
         }}
       />
-      <div
-        className="absolute inset-0"
-        style={{
-          background: "rgba(0,0,0,0.25)",
-        }}
-      />
+      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.25)" }} />
     </div>
   );
 };
 
+// Fungsi bantuan untuk decode JWT token dengan aman
+const parseJwt = (token) => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Gagal parse JWT", error);
+    return null;
+  }
+};
+
 function LoginPage() {
-  /** Navigation */
   const navigate = useNavigate();
 
-  /** Hooks */
   const { mutateAsync: loginMutation, isLoading: isLoginLoading, error: loginError } = useLogin();
-  // Tambahkan hook signup
   const { mutateAsync: signupMutation, isLoading: isSignupLoading, error: signupError } = useSignup();
 
-  /** Store */
   const user = authStore((state) => state.user);
   const isAuthenticated = authStore((state) => state.isAuthenticated);
   const setSessionData = authStore((state) => state.setSessionData);
 
-  /** States */
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const [isLoginMode, setIsLoginMode] = useState(true); // State untuk toggle form
+  const [isLoginMode, setIsLoginMode] = useState(true);
 
-  // Use a ref to track if the effect has already run
   const effectRan = useRef(false);
 
-  // --- REDIRECT LOGIC ON PAGE LOAD ---
+  // 1. Tangani redirect jika user sudah punya sesi login yang aktif
   useEffect(() => {
     if (effectRan.current) return;
     effectRan.current = true;
 
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-
     if (isAuthenticated) {
-      if (token) {
-        try {
-          const decoded = atob(token);
-          const { authorizedUser, url, parameter } = JSON.parse(decoded);
-
-          if (
-            Array.isArray(authorizedUser) &&
-            authorizedUser.length > 0 &&
-            authorizedUser.includes(user.LOGIN_ID)
-          ) {
-            if (/^https?:\/\//.test(url)) {
-              window.location.href = url;
-            } else {
-              const navUrl = url?.startsWith("/") ? url : `/${url}`;
-              navigate(navUrl, parameter ? { state: parameter } : undefined);
-            }
-            return;
-          }
-        } catch (e) {
-          console.log("[LoginPage] Error decoding token:", e);
-        }
+      const userRole = user?.role || user?.ROLE_CODE;
+      if (userRole === "ADMINISTRATOR") {
+        navigate("/dashboard-admin");
+      } else {
+        navigate("/dashboard-petani");
       }
-      navigate("/alsintan");
     }
-
     setIsInitialLoading(false);
-  }, [isAuthenticated, navigate, user]);
+  }, [isAuthenticated, user, navigate]);
 
-  // --- SUBMIT LOGIC (LOGIN & SIGNUP) ---
   const handleSubmit = async (values) => {
     setErrorMessage("");
     try {
-      const payload = {
-        username: values.username,
-        password: values.password,
-      };
-
       if (isLoginMode) {
-        // PROSES LOGIN
+        const payload = {
+          username: values.username,
+          password: values.password,
+        };
+
         const response = await loginMutation(payload);
 
         if (response?.access_token) {
           const ACCESS_TOKEN = response.access_token;
-          const REFRESH_TOKEN = null;
-          const ACCESSIBLE_CARD = null;
+          const decodedToken = parseJwt(ACCESS_TOKEN);
+          const userRole = decodedToken?.role || "PETANI"; 
 
-          const minimalMenus = [
-            {
-              ID: "ALSINTAN",
-              NAME: "Laporan Pemanfaatan & Kondisi Alsintan",
-              URL: "/alsintan",
-              ICON: "bx bx-spreadsheet",
-              SUB_MENU: [],
-            },
-          ];
-
-          const minimalAccessibleMenu = [
-            "/alsintan",
-            "/alsintan/input-apbn",
-            "/alsintan/input-apbd",
-          ];
-
-          setSessionData(
-            ACCESS_TOKEN,
-            REFRESH_TOKEN,
-            minimalMenus,
-            minimalAccessibleMenu,
-            ACCESSIBLE_CARD
-          );
-
-          const params = new URLSearchParams(window.location.search);
-          const token = params.get("token");
-
-          if (token) {
-            try {
-              const decoded = atob(token);
-              const { authorizedUser, url, parameter } = JSON.parse(decoded);
-              if (Array.isArray(authorizedUser) && authorizedUser.includes(values.username)) {
-                if (/^https?:\/\//.test(url)) {
-                  window.location.href = url;
-                } else {
-                  const navUrl = url?.startsWith("/") ? url : `/${url}`;
-                  navigate(navUrl, parameter ? { state: parameter } : undefined);
-                }
-                return;
+          const appName = import.meta.env.VITE_APP_NAME || ""; 
+          localStorage.setItem(`token${appName}`, ACCESS_TOKEN); 
+          
+          // --- TAMBAHKAN DEKLARASI DI SINI ---
+          let minimalAccessibleMenu = [];
+          let minimalMenus = []; // <--- Ini yang kurang sebelumnya
+          // -----------------------------------
+        
+          if (userRole === "ADMINISTRATOR") {
+            // 1. Data untuk routing (App.jsx)
+            minimalAccessibleMenu = ["/dashboard-admin"];
+            
+            // 2. Data untuk Sidebar (Sidebar.jsx)
+            minimalMenus = [
+              { 
+                NAME: "Dashboard Admin", 
+                URL: "/dashboard-admin", 
+                ICON: "fas fa-home"
               }
-            } catch (e) {}
+            ];
+          } else {
+            // 1. Data untuk routing (App.jsx)
+            minimalAccessibleMenu = [
+              "/dashboard-petani",
+              "/alsintan",
+              "/alsintan/input-apbn",
+              "/alsintan/input-apbd",
+              "/alsintan/detail",
+              "/usulan-cpcl",
+              "/pengaduan"
+            ];
+
+            // 2. Data untuk Sidebar (Sidebar.jsx)
+            minimalMenus = [
+              { 
+                NAME: "Dashboard", 
+                URL: "/dashboard-petani", 
+                ICON: "fas fa-home" 
+              },
+              { 
+                NAME: "Alsintan", 
+                URL: "/alsintan", 
+                ICON: "fas fa-tractor",
+              },
+              { 
+                NAME: "Usulan CPCL", 
+                URL: "/usulan-cpcl", 
+                ICON: "fas fa-file-alt" 
+              },
+              { 
+                NAME: "Pengaduan", 
+                URL: "/pengaduan", 
+                ICON: "fas fa-comments" 
+              }
+            ];
           }
-          navigate("/alsintan");
+
+          // Simpan akses menu DAN struktur sidebar ke Zustand
+          setSessionData(ACCESS_TOKEN, decodedToken, minimalMenus, minimalAccessibleMenu, null);
+          
+          // Navigasi setelah login
+          if (userRole === "ADMINISTRATOR") {
+            navigate("/dashboard-admin");
+          } else {
+            navigate("/dashboard-petani");
+          }
+        
+
         } else {
-          setErrorMessage(response?.message || "Login failed");
+          setErrorMessage(response?.message || "Login gagal. Kredensial tidak valid.");
         }
       } else {
-      // PROSES SIGNUP
-      const response = await signupMutation(payload);
+        // Mode Sign Up
+        const payload = {
+          namaLengkap: values.namaLengkap,
+          username: values.username,
+          password: values.password,
+        };
 
-      // Jika API NestJS kamu mengembalikan object atau status sukses tertentu, 
-      // kamu bisa sesuaikan kondisi if di bawah ini (misal: response atau response?.success)
-      if (response) {
-        toast({
-          title: "Pendaftaran Berhasil!",
-          description: "Silakan login menggunakan akun yang baru dibuat.",
-          variant: "success"
-        });
-        
-        // Pastikan ini dieksekusi agar form berubah kembali ke mode Login
-        setIsLoginMode(true); 
-      } else {
-        setErrorMessage("Gagal mendaftar. Silakan coba lagi.");
+        const response = await signupMutation(payload);
+
+        if (response) {
+          toast({
+            title: "Pendaftaran Berhasil!",
+            description: "Akun Petani Anda telah dibuat. Silakan login.",
+            variant: "success"
+          });
+          setIsLoginMode(true);
+        } else {
+          setErrorMessage("Gagal mendaftar. Silakan coba lagi.");
+        }
       }
-    }
     } catch (error) {
+      const serverMessage = error?.response?.data?.message || error?.message;
       setErrorMessage(
-        isLoginMode 
-          ? "Username or password is invalid" 
-          : "Gagal mendaftar, username mungkin sudah dipakai"
+        serverMessage || (isLoginMode ? "Username atau password salah." : "Gagal mendaftar, username mungkin sudah dipakai.")
       );
     }
   };
+
+  const validationSchema = isLoginMode
+    ? z.object({
+        username: z.string().min(1, "Username tidak boleh kosong"),
+        password: z.string().min(1, "Password tidak boleh kosong"),
+      })
+    : z.object({
+        namaLengkap: z.string().min(3, "Nama Lengkap minimal 3 karakter"),
+        username: z.string().min(3, "Username minimal 3 karakter"),
+        password: z.string().min(6, "Password minimal 6 karakter"),
+      });
 
   if (isInitialLoading) {
     return (
@@ -209,9 +227,8 @@ function LoginPage() {
     );
   }
 
-  // Gabungkan error message
-  const currentError = errorMessage || (isLoginMode ? loginError : signupError);
   const isLoading = isLoginMode ? isLoginLoading : isSignupLoading;
+  const displayError = errorMessage || (isLoginMode ? loginError?.message : signupError?.message);
 
   return (
     <AnimatePresence mode="wait">
@@ -221,6 +238,7 @@ function LoginPage() {
         exit={{ opacity: 0 }}
         className="min-h-screen flex bg-white relative overflow-hidden justify-center"
       >
+        {/* Konten UI Sisanya Tetap Sama */}
         <div className="w-0 lg:w-1/2 p-2 transition-all duration-300 relative flex flex-col">
           <LoginVideoBackground />
           <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -243,26 +261,23 @@ function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-md"
           >
-            {/* Header Form Dinamis */}
             <div className="mb-6 text-center">
               <h1 className="text-2xl font-bold text-gray-800">
                 {isLoginMode ? "Selamat Datang" : "Daftar Akun Baru"}
               </h1>
               <p className="text-gray-500 text-sm mt-1">
-                {isLoginMode ? "Silakan login ke akun Anda" : "Lengkapi data untuk mendaftar"}
+                {isLoginMode ? "Silakan login ke akun Anda" : "Daftar sebagai Petani untuk mengajukan usulan"}
               </p>
             </div>
 
             <Form
-              defaultValues={{ username: "", password: "" }}
-              validation={z.object({
-                username: z.string().min(1, "Username tidak boleh kosong"),
-                password: z.string().min(1, "Password tidak boleh kosong"),
-              })}
+              key={isLoginMode ? "login" : "signup"} 
+              defaultValues={{ namaLengkap: "", username: "", password: "" }}
+              validation={validationSchema}
               onSubmit={handleSubmit}
             >
               <AnimatePresence>
-                {currentError && (
+                {displayError && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -270,26 +285,39 @@ function LoginPage() {
                     className="mb-4 p-3 rounded-lg border border-red-300 bg-red-50"
                   >
                     <p className="text-sm text-red-600 font-medium">
-                      {currentError.toString()}
+                      {typeof displayError === 'string' ? displayError : "Terjadi kesalahan pada server."}
                     </p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
               <div className="space-y-4">
+                {!isLoginMode && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+                    <Input
+                      label="Nama Lengkap"
+                      name="namaLengkap"
+                      type="text"
+                      placeholder="Masukkan nama lengkap Anda"
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-normal"
+                    />
+                  </motion.div>
+                )}
+
                 <Input
                   label="Username"
                   name="username"
                   type="text"
                   placeholder="Masukkan username"
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-normal"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-normal"
                 />
+                
                 <Input
                   label="Password"
                   name="password"
                   type="password"
                   placeholder="Masukkan password"
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-normal"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-normal"
                 />
               </div>
 
@@ -308,14 +336,13 @@ function LoginPage() {
               </Button>
             </Form>
 
-            {/* Toggle Button untuk pindah mode Sign Up <-> Login */}
             <div className="mt-6 text-center text-sm text-gray-600">
               {isLoginMode ? "Belum punya akun? " : "Sudah punya akun? "}
               <button
                 type="button"
                 onClick={() => {
                   setIsLoginMode(!isLoginMode);
-                  setErrorMessage(""); // Reset error saat ganti mode
+                  setErrorMessage(""); 
                 }}
                 className="text-primary-normal font-semibold hover:underline focus:outline-none"
               >
