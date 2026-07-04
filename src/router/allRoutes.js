@@ -56,7 +56,7 @@ export const allRoutes = [
     component: lazy(() => import("@/pages/Alsintan/Detail.jsx")),
     exact: true,
     protected: true,
-    roles: [ROLES.PETANI],
+    roles: [ROLES.PETANI, ROLES.ADMIN],
   },
   {
     title: "usulan-cpcl",
