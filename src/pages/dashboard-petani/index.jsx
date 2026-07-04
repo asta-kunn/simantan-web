@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MainCard from "@/components/common/MainCard";
-import { FileText, PlusCircle, CheckCircle, Clock } from "lucide-react";
+// PERUBAHAN: Menambahkan icon Truck untuk step penyaluran
+import { FileText, PlusCircle, CheckCircle, Clock, Truck } from "lucide-react";
 import mainInstance from "@/api/instances/main.instance";
 import { Button } from "@/components/Dexain";
 import { Stepper } from "@/components/Dexain";
@@ -30,7 +31,8 @@ const PetaniDashboard = () => {
     
     const getStepState = (stepKey) => {
       if (isRejected) return 'error';
-      const statusOrder = ['PENDING', 'VERIFIKASI_AWAL', 'VALIDASI_LAPANGAN', 'SK_DITERBITKAN'];
+      // PERUBAHAN: Menambahkan PENYALURAN_BANTUAN ke dalam urutan status
+      const statusOrder = ['PENDING', 'VERIFIKASI_AWAL', 'VALIDASI_LAPANGAN', 'SK_DITERBITKAN', 'PENYALURAN_BANTUAN'];
       const currentIndex = statusOrder.indexOf(status);
       const stepIndex = statusOrder.indexOf(stepKey);
 
@@ -63,6 +65,13 @@ const PetaniDashboard = () => {
         description: "Penetapan SK Usulan",
         state: getStepState('SK_DITERBITKAN'),
         icon: CheckCircle
+      },
+      // PERUBAHAN: Menambahkan Step Penyaluran Bantuan
+      {
+        title: "Penyaluran Bantuan",
+        description: "Alsintan disalurkan",
+        state: getStepState('PENYALURAN_BANTUAN'),
+        icon: Truck 
       }
     ];
   };
@@ -88,11 +97,9 @@ const PetaniDashboard = () => {
               <div key={tiket.id} className="p-4 border rounded-lg bg-neutral-50/50">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    {/* PERBAIKAN: Gunakan camelCase (nomorTiket, jenisAlsintanUsulan) */}
                     <h4 className="font-bold text-primary-normal">{tiket.nomorTiket}</h4>
                     <span className="text-sm font-medium">{tiket.jenisAlsintanUsulan} ({tiket.jumlahUsulanAlsintan} Unit)</span>
                   </div>
-                  {/* PERBAIKAN: Gunakan createdAt */}
                   <span className="text-xs text-muted-foreground">{new Date(tiket.createdAt).toLocaleDateString('id-ID')}</span>
                 </div>
                 
@@ -120,7 +127,6 @@ const PetaniDashboard = () => {
             {pengaduan.map((tiket) => (
               <div key={tiket.id} className="p-4 border rounded-lg bg-white shadow-sm">
                 <div className="flex justify-between">
-                  {/* PERBAIKAN: Gunakan camelCase */}
                   <span className="font-bold text-sm text-gray-700">{tiket.nomorTiket}</span>
                   <span className="text-xs text-gray-500">{new Date(tiket.createdAt).toLocaleDateString('id-ID')}</span>
                 </div>

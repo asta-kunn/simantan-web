@@ -42,7 +42,6 @@ const AdminDashboard = () => {
 
   const handleBalasPengaduan = async (id) => {
     try {
-      // Pastikan property body ini sesuai dengan yg di-handle di Controller backend
       await mainInstance.patch(`/pengaduan/${id}/tanggapan`, {
         tanggapan_petugas: tanggapan[id]
       });
@@ -92,12 +91,12 @@ const AdminDashboard = () => {
                       <span className="font-bold text-primary-normal">{tiket.nomorTiket}</span><br/>
                       <span className="text-xs text-muted-foreground">{new Date(tiket.createdAt).toLocaleDateString('id-ID')}</span>
                     </td>
-                    {/* PERBAIKAN: Gunakan camelCase untuk namaKetua dll */}
                     <td className="px-6 py-4">{tiket.namaKetua} <br/><span className="text-xs text-muted-foreground">{tiket.desa}</span></td>
                     <td className="px-6 py-4">{tiket.jenisAlsintanUsulan} ({tiket.jumlahUsulanAlsintan} Unit)</td>
                     <td className="px-6 py-4 font-semibold">{tiket.status}</td>
                     <td className="px-6 py-4">
-                      {tiket.status !== 'SK_DITERBITKAN' && tiket.status !== 'REJECTED' ? (
+                      {/* PERUBAHAN: Ubah validasi batas akhir proses menjadi PENYALURAN_BANTUAN */}
+                      {tiket.status !== 'PENYALURAN_BANTUAN' && tiket.status !== 'REJECTED' ? (
                         <div className="flex flex-col gap-2 min-w-[250px]">
                           <Input 
                             placeholder="Catatan..." 
@@ -113,6 +112,10 @@ const AdminDashboard = () => {
                             )}
                             {tiket.status === 'VALIDASI_LAPANGAN' && (
                               <Button size="sm" className="w-full bg-primary-normal hover:bg-primary-dark text-xs" onClick={() => handleUpdateUsulan(tiket.id, 'SK_DITERBITKAN')}>Terbitkan SK</Button>
+                            )}
+                            {/* PERUBAHAN: Tambahkan tombol baru untuk menyalurkan bantuan */}
+                            {tiket.status === 'SK_DITERBITKAN' && (
+                              <Button size="sm" className="w-full bg-success-normal hover:bg-success-dark text-xs" onClick={() => handleUpdateUsulan(tiket.id, 'PENYALURAN_BANTUAN')}>Salurkan Bantuan</Button>
                             )}
                             <Button size="sm" variant="outline" className="border-danger-normal text-danger-normal" onClick={() => handleUpdateUsulan(tiket.id, 'REJECTED')}><X size={14}/></Button>
                           </div>
@@ -130,7 +133,6 @@ const AdminDashboard = () => {
                       <span className="font-bold text-primary-normal">{tiket.nomorTiket}</span><br/>
                       <span className="text-xs text-muted-foreground">{new Date(tiket.createdAt).toLocaleDateString('id-ID')}</span>
                     </td>
-                    {/* PERBAIKAN: Gunakan camelCase */}
                     <td className="px-6 py-4">{tiket.namaPelapor} <br/><span className="text-xs text-muted-foreground">{tiket.kontakPelapor}</span></td>
                     <td className="px-6 py-4">
                       <strong>{tiket.kategoriPengaduan}</strong>
