@@ -235,7 +235,7 @@ function LoginPage() {
             className="w-full max-w-md"
           >
             <div className="mb-6 text-center flex flex-col items-center">
-              <h1 className="text-2xl font-bold text-gray-800">
+              <h1 className="hidden lg:block text-2xl font-bold text-gray-800">
                 {isLoginMode ? "Selamat Datang" : "Daftar Akun Baru"}
               </h1>
               
@@ -244,12 +244,11 @@ function LoginPage() {
                 {isLoginMode ? "Silakan login ke akun Anda" : "Daftar sebagai Petani untuk mengajukan usulan"}
               </p>
 
-              {/* Banner ini hanya muncul di mobile (lg:hidden), diletakkan tepat di bawah judul */}
               <div className="flex lg:hidden justify-center mt-4 w-full">
                 <img
                   src={LoginBanner}
                   alt="Login Banner Mobile"
-                  className="w-60 sm:w-70 h-auto object-contain rounded-lg shadow-sm border border-gray-100"
+                  className="w-80 sm:w-90 h-auto object-contain rounded-lg shadow-sm border border-gray-100"
                   style={{ background: "rgba(255,255,255,0.9)", padding: "0.5rem" }}
                 />
               </div>
