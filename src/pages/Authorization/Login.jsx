@@ -210,7 +210,7 @@ function LoginPage() {
         exit={{ opacity: 0 }}
         className="min-h-screen flex bg-white relative overflow-hidden justify-center"
       >
-        {/* KIRI: Konten Video & Banner (Disembunyikan di Mobile, Muncul di Desktop 'lg') */}
+        {/* KIRI: Konten Video & Banner (Desktop Saja) */}
         <div className="hidden lg:flex lg:w-1/2 p-2 transition-all duration-300 relative flex-col">
           <LoginVideoBackground />
           <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
@@ -227,20 +227,32 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* KANAN: Form Login/Signup (Lebar 100% di Mobile, 50% di Desktop) */}
+        {/* KANAN: Form Login/Signup */}
         <div className="w-full lg:w-1/2 flex items-center justify-center transition-all duration-300 p-6 sm:p-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-md"
           >
-            <div className="mb-6 text-center">
+            <div className="mb-6 text-center flex flex-col items-center">
               <h1 className="text-2xl font-bold text-gray-800">
                 {isLoginMode ? "Selamat Datang" : "Daftar Akun Baru"}
               </h1>
-              <p className="text-gray-500 text-sm mt-1">
+              
+              {/* Teks ini hanya muncul di desktop (lg:block), disembunyikan di mobile (hidden) */}
+              <p className="hidden lg:block text-gray-500 text-sm mt-1">
                 {isLoginMode ? "Silakan login ke akun Anda" : "Daftar sebagai Petani untuk mengajukan usulan"}
               </p>
+
+              {/* Banner ini hanya muncul di mobile (lg:hidden), diletakkan tepat di bawah judul */}
+              <div className="flex lg:hidden justify-center mt-4 w-full">
+                <img
+                  src={LoginBanner}
+                  alt="Login Banner Mobile"
+                  className="w-60 sm:w-70 h-auto object-contain rounded-lg shadow-sm border border-gray-100"
+                  style={{ background: "rgba(255,255,255,0.9)", padding: "0.5rem" }}
+                />
+              </div>
             </div>
 
             <Form

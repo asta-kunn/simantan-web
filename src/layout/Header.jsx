@@ -175,10 +175,10 @@ const Header = ({ handleDarkMode }) => {
                 {user ? user.username : ""}
               </b>
               <span className="text-primary-normal text-xs  font-semibold ">
-                Officer
+                Administrator
               </span>
               <span className="text-gray-400 text-xs">
-                Dinas Pertanian & Peternakan
+                Distanhorbun Kab. bogor
               </span>
             </div>
           </div>
