@@ -111,16 +111,11 @@ function LoginPage() {
           const appName = import.meta.env.VITE_APP_NAME || ""; 
           localStorage.setItem(`token${appName}`, ACCESS_TOKEN); 
           
-          // --- TAMBAHKAN DEKLARASI DI SINI ---
           let minimalAccessibleMenu = [];
-          let minimalMenus = []; // <--- Ini yang kurang sebelumnya
-          // -----------------------------------
+          let minimalMenus = []; 
         
           if (userRole === "ADMINISTRATOR") {
-            // 1. Data untuk routing (App.jsx)
             minimalAccessibleMenu = ["/dashboard-admin"];
-            
-            // 2. Data untuk Sidebar (Sidebar.jsx)
             minimalMenus = [
               { 
                 NAME: "Dashboard Admin", 
@@ -129,7 +124,6 @@ function LoginPage() {
               }
             ];
           } else {
-            // 1. Data untuk routing (App.jsx)
             minimalAccessibleMenu = [
               "/dashboard-petani",
               "/alsintan",
@@ -140,47 +134,25 @@ function LoginPage() {
               "/pengaduan"
             ];
 
-            // 2. Data untuk Sidebar (Sidebar.jsx)
             minimalMenus = [
-              { 
-                NAME: "Dashboard", 
-                URL: "/dashboard-petani", 
-                ICON: "fas fa-home" 
-              },
-              { 
-                NAME: "Alsintan", 
-                URL: "/alsintan", 
-                ICON: "fas fa-tractor",
-              },
-              { 
-                NAME: "Usulan CPCL", 
-                URL: "/usulan-cpcl", 
-                ICON: "fas fa-file-alt" 
-              },
-              { 
-                NAME: "Pengaduan", 
-                URL: "/pengaduan", 
-                ICON: "fas fa-comments" 
-              }
+              { NAME: "Dashboard", URL: "/dashboard-petani", ICON: "fas fa-home" },
+              { NAME: "Alsintan", URL: "/alsintan", ICON: "fas fa-tractor" },
+              { NAME: "Usulan CPCL", URL: "/usulan-cpcl", ICON: "fas fa-file-alt" },
+              { NAME: "Pengaduan", URL: "/pengaduan", ICON: "fas fa-comments" }
             ];
           }
 
-          // Simpan akses menu DAN struktur sidebar ke Zustand
           setSessionData(ACCESS_TOKEN, decodedToken, minimalMenus, minimalAccessibleMenu, null);
           
-          // Navigasi setelah login
           if (userRole === "ADMINISTRATOR") {
             navigate("/dashboard-admin");
           } else {
             navigate("/dashboard-petani");
           }
-        
-
         } else {
           setErrorMessage(response?.message || "Login gagal. Kredensial tidak valid.");
         }
       } else {
-        // Mode Sign Up
         const payload = {
           namaLengkap: values.namaLengkap,
           username: values.username,
@@ -238,10 +210,10 @@ function LoginPage() {
         exit={{ opacity: 0 }}
         className="min-h-screen flex bg-white relative overflow-hidden justify-center"
       >
-        {/* Konten UI Sisanya Tetap Sama */}
-        <div className="w-0 lg:w-1/2 p-2 transition-all duration-300 relative flex flex-col">
+        {/* KIRI: Konten Video & Banner (Disembunyikan di Mobile, Muncul di Desktop 'lg') */}
+        <div className="hidden lg:flex lg:w-1/2 p-2 transition-all duration-300 relative flex-col">
           <LoginVideoBackground />
-          <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
             <img
               src={LoginBanner}
               alt="Login Banner"
@@ -255,7 +227,8 @@ function LoginPage() {
           </div>
         </div>
 
-        <div className="w-full lg:w-1/2 flex items-center justify-center transition-all duration-300 min-w-[500px] max-w-[50%]">
+        {/* KANAN: Form Login/Signup (Lebar 100% di Mobile, 50% di Desktop) */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center transition-all duration-300 p-6 sm:p-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
