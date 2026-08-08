@@ -3,6 +3,7 @@ import { Accordion, Button, Input, Select, Uploader } from "@/components/Dexain"
 import { SendHorizontal, MessageSquareWarning, Ticket, CheckCircle2 } from "lucide-react";
 import MainCard from "@/components/common/MainCard";
 import mainInstance from "@/api/instances/main.instance";
+import { uploadFile } from "@/api/storage";
 import { useUIStore } from "@/stores/uiStore";
 
 const PengaduanForm = () => {
@@ -48,9 +49,16 @@ const PengaduanForm = () => {
         closeStack();
         setLoading(true);
         try {
+          // Lampiran opsional: kalau ada, unggah dulu ke GCS.
+          let buktiLampiran = null;
+          if (lampiranFile) {
+            const uploaded = await uploadFile(lampiranFile, `pengaduan/${form.kategoriPengaduan || "lainnya"}`);
+            buktiLampiran = uploaded.path;
+          }
+
           const payload = {
             ...form,
-            buktiLampiran: lampiranFile ? "/lampiran_pengaduan.jpg" : null,
+            buktiLampiran,
           };
 
           const res = await mainInstance.post(`/pengaduan`, payload);
@@ -67,7 +75,10 @@ const PengaduanForm = () => {
         } catch (err) {
           addStack({
             title: "Gagal Mengirim",
-            description: "Terjadi kesalahan sistem, silakan coba beberapa saat lagi.",
+            description:
+              err?.response?.data?.message ||
+              err?.message ||
+              "Terjadi kesalahan sistem, silakan coba beberapa saat lagi.",
             variant: "danger",
             isConfirm: true,
           });

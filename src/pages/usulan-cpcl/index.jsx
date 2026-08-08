@@ -4,6 +4,7 @@ import { Accordion, Button, Input, Uploader } from "@/components/Dexain";
 import { SendHorizontal, ClipboardList, FileInput, MapPin } from "lucide-react";
 import MainCard from "@/components/common/MainCard";
 import mainInstance from "@/api/instances/main.instance";
+import { uploadFile } from "@/api/storage";
 import { useUIStore } from "@/stores/uiStore";
 
 const UsulanCpclForm = () => {
@@ -61,11 +62,21 @@ const UsulanCpclForm = () => {
         closeStack();
         setLoading(true);
         try {
+          // Unggah proposal asli ke GCS dulu, simpan object path-nya.
+          let dokumenProposal = null;
+          if (proposalFile) {
+            const uploaded = await uploadFile(
+              proposalFile,
+              `usulan-cpcl/${form.kecamatan || "tanpa-kecamatan"}`
+            );
+            dokumenProposal = uploaded.path;
+          }
+
           const payload = {
             ...form,
             luasLahan: form.luasLahan ? Number(form.luasLahan) : null,
             jumlahUsulanAlsintan: Number(form.jumlahUsulanAlsintan),
-            dokumenProposal: proposalFile ? "/proposal_usulan.pdf" : null, // Ganti dengan logic upload backend Anda nantinya
+            dokumenProposal,
           };
 
           await mainInstance.post(`/usulan-cpcl`, payload);
@@ -81,7 +92,10 @@ const UsulanCpclForm = () => {
         } catch (err) {
           addStack({
             title: "Gagal Mengirim Usulan",
-            description: "Terjadi kesalahan pada server saat menyimpan data.",
+            description:
+              err?.response?.data?.message ||
+              err?.message ||
+              "Terjadi kesalahan pada server saat mengunggah file atau menyimpan data.",
             variant: "danger",
             isConfirm: true,
           });
@@ -206,7 +220,7 @@ const UsulanCpclForm = () => {
               label="Upload Dokumen Proposal (PDF)"
               type="file"
               extensions={["pdf"]}
-              files={proposalFile ? "proposal_usulan.pdf" : undefined}
+              files={proposalFile ? proposalFile.name : undefined}
               onDelete={() => setProposalFile(null)}
               onChange={(file) => setProposalFile(file)}
               required

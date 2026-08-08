@@ -7,6 +7,7 @@ import { FileText, Image as ImageIcon, History as HistoryIcon, SendHorizontal, C
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import MainCard from "@/components/common/MainCard";
 import mainInstance from "@/api/instances/main.instance";
+import { uploadFile, fetchAsFile, fetchFileBlob, fileNameOf } from "@/api/storage";
 import { useUIStore } from "@/stores/uiStore";
 
 const AlsintanDetail = () => {
@@ -99,8 +100,10 @@ const AlsintanDetail = () => {
         lokasi: res?.lokasi || ""
       });
       setLaporanForm({
-        documentUrlKondisi: res?.documentUrlKondisi || "",
-        documentUrlPemanfaatan: res?.documentUrlPemanfaatan || ""
+        documentUrlKondisi:
+          res?.documents?.find((d) => d.type === "KONDISI" && d.isCurrent)?.documentUrl || "",
+        documentUrlPemanfaatan:
+          res?.documents?.find((d) => d.type === "PEMANFAATAN" && d.isCurrent)?.documentUrl || ""
       });
       
       setIsEditingPemanfaatan(!(res?.tanggalAwalPenggunaan));
@@ -209,74 +212,69 @@ const AlsintanDetail = () => {
 
   const handleUploadLaporan = async () => {
     if (!kondisiFile && !pemanfaatanFile) return;
-    setUploadingLaporan(true);
-    try {
-      // Payload menggunakan file dummy lokal dari folder public/
-      const payload = {
-        kelurahanDesa: masterData?.kelurahanDesa || "-",
-        namaPoktan: masterData?.namaPoktan || "-",
-        ketuaPoktan: masterData?.ketuaPoktan || "-",
-        alamatSekretariat: masterData?.alamatSekretariat || "-",
-        documentUrlKondisi: "/kondisi_dummy.jpeg",
-        documentUrlPemanfaatan: "/pemanfaatan_dummy.pdf",
-      };
-      
-      addStack({
-        title: "Kirim Laporan?",
-        description: "Pastikan file yang Anda unggah sudah benar.",
-        variant: "warning",
-        size: "md",
-        confirmText: (
-          <div className="flex items-center gap-2">Confirm <SendHorizontal className="size-4" /></div>
-        ),
-        onCancel: () => closeStack(),
-        onConfirm: async () => {
-          closeStack();
-          try {
-            await mainInstance.patch(`/reports/${idPoktan}/laporan`, payload, { params: { type }, headers: { "Content-Type": "application/json" } });
-            
-            // Jika berhasil, panggil ulang data dari database
-            await loadDetail();
-            
-            setKondisiFile(null);
-            setPemanfaatanFile(null);
-            setIsEditingLaporan(false);
-            addStack({
-              title: "Laporan Berhasil Dikirim",
-              description: "File laporan kondisi/pemanfaatan telah tersimpan.",
-              variant: "success",
-              isConfirm: true,
-            });
-          } catch (err) {
-            // FALLBACK UI: Jika API error/mati, kita paksa UI update menggunakan dummy lokal
-            clearStacks();
-            const now = new Date().toISOString();
-            const newDocs = [
-              kondisiFile ? { document_id: Date.now(), documentUrl: "/kondisi_dummy.jpeg", version: now, isCurrent: true, type: "KONDISI" } : null,
-              pemanfaatanFile ? { document_id: Date.now() + 1, documentUrl: "/pemanfaatan_dummy.pdf", version: now, isCurrent: true, type: "PEMANFAATAN" } : null,
-            ].filter(Boolean);
-            
-            setDetail((prev) => ({
-              ...prev,
-              documents: Array.isArray(prev?.documents)
-                ? [
-                    ...newDocs,
-                    ...prev.documents.map((d) => ({ ...d, isCurrent: false })),
-                  ]
-                : newDocs,
-            }));
-            
-            setKondisiFile(null);
-            setPemanfaatanFile(null);
-            setIsEditingLaporan(false);
-          }
-        },
-      });
-    } catch (e) {
-      setUploadingLaporan(false);
-    } finally {
-      setUploadingLaporan(false);
-    }
+
+    addStack({
+      title: "Kirim Laporan?",
+      description: "File akan diunggah ke storage dan disimpan sebagai versi terbaru.",
+      variant: "warning",
+      size: "md",
+      confirmText: (
+        <div className="flex items-center gap-2">Confirm <SendHorizontal className="size-4" /></div>
+      ),
+      onCancel: () => closeStack(),
+      onConfirm: async () => {
+        closeStack();
+        setUploadingLaporan(true);
+        try {
+          // 1. Unggah file asli ke Google Cloud Storage lewat API.
+          const folderBase = `laporan/${type}/${idPoktan}`;
+
+          const [kondisiUploaded, pemanfaatanUploaded] = await Promise.all([
+            kondisiFile ? uploadFile(kondisiFile, `${folderBase}/KONDISI`) : Promise.resolve(null),
+            pemanfaatanFile ? uploadFile(pemanfaatanFile, `${folderBase}/PEMANFAATAN`) : Promise.resolve(null),
+          ]);
+
+          // 2. Simpan object path hasil upload (bukan path dummy) ke database.
+          const payload = {
+            kelurahanDesa: masterData?.kelurahanDesa || "-",
+            namaPoktan: masterData?.namaPoktan || "-",
+            ketuaPoktan: masterData?.ketuaPoktan || "-",
+            alamatSekretariat: masterData?.alamatSekretariat || "-",
+          };
+          if (kondisiUploaded?.path) payload.documentUrlKondisi = kondisiUploaded.path;
+          if (pemanfaatanUploaded?.path) payload.documentUrlPemanfaatan = pemanfaatanUploaded.path;
+
+          await mainInstance.patch(`/reports/${idPoktan}/laporan`, payload, {
+            params: { type },
+            headers: { "Content-Type": "application/json" },
+          });
+
+          await loadDetail();
+
+          setKondisiFile(null);
+          setPemanfaatanFile(null);
+          setIsEditingLaporan(false);
+          addStack({
+            title: "Laporan Berhasil Dikirim",
+            description: "File laporan kondisi/pemanfaatan telah tersimpan di storage.",
+            variant: "success",
+            isConfirm: true,
+          });
+        } catch (err) {
+          // Tidak ada lagi fallback dummy: upload gagal berarti tidak ada dokumen tersimpan.
+          clearStacks();
+          addStack({
+            title: "Gagal Mengirim Laporan",
+            description:
+              err?.response?.data?.message || err?.message || "Terjadi kesalahan saat mengunggah file.",
+            variant: "danger",
+            isConfirm: true,
+          });
+        } finally {
+          setUploadingLaporan(false);
+        }
+      },
+    });
   };
 
   const currentKondisi = useMemo(
@@ -295,18 +293,32 @@ const AlsintanDetail = () => {
   }, [isEditingLaporan, currentKondisi, currentPemanfaatan]);
 
   const openDocPreview = async (doc) => {
-    const isKondisi = doc?.type === "KONDISI";
-    const path = isKondisi ? "/kondisi_dummy.jpeg" : "/pemanfaatan_dummy.pdf";
+    // doc.documentUrl = object path di bucket GCS. Diambil lewat API (tanpa perlu CORS bucket).
+    const path = doc?.documentUrl;
+    if (!path) {
+      addStack({
+        title: "Dokumen Tidak Ditemukan",
+        description: "Dokumen ini belum memiliki file di storage.",
+        variant: "danger",
+        isConfirm: true,
+      });
+      return;
+    }
+
     try {
-      const res = await fetch(path);
-      const blob = await res.blob();
-      if (isKondisi) {
-        setPreviewImage(blob);
+      if (doc?.type === "KONDISI") {
+        setPreviewImage(await fetchFileBlob(path));
       } else {
-        const file = new File([blob], `preview.pdf`, { type: 'application/pdf' });
-        setPreviewPdf(file);
+        setPreviewPdf(await fetchAsFile(path, "preview.pdf"));
       }
-    } catch (e) {}
+    } catch (e) {
+      addStack({
+        title: "Gagal Membuka Dokumen",
+        description: e?.response?.data?.message || e?.message || "File tidak dapat diambil dari storage.",
+        variant: "danger",
+        isConfirm: true,
+      });
+    }
   };
 
   return (
@@ -451,7 +463,8 @@ const AlsintanDetail = () => {
                 <Button
                   variant="outline"
                   className="text-success-normal border-success-normal hover:bg-success-normal/10"
-                  onClick={() => openDocPreview({ type: 'PEMANFAATAN' })}
+                  disabled={!currentPemanfaatan}
+                  onClick={() => openDocPreview(currentPemanfaatan)}
                 >
                   Preview
                 </Button>
@@ -474,7 +487,8 @@ const AlsintanDetail = () => {
                 <Button
                   variant="outline"
                   className="text-success-normal border-success-normal hover:bg-success-normal/10"
-                  onClick={() => openDocPreview({ type: 'KONDISI' })}
+                  disabled={!currentKondisi}
+                  onClick={() => openDocPreview(currentKondisi)}
                 >
                   Preview
                 </Button>
@@ -495,7 +509,7 @@ const AlsintanDetail = () => {
                   label="Upload Laporan Kondisi (JPG/PNG)"
                   type="file"
                   extensions={["jpg","jpeg","png"]}
-                  files={showKondisiExisting ? "/kondisi_dummy.jpeg" : undefined}
+                  files={showKondisiExisting ? fileNameOf(currentKondisi?.documentUrl) : undefined}
                   onDelete={() => { setShowKondisiExisting(false); setKondisiFile(null); }}
                   onChange={(file) => { setShowKondisiExisting(false); setKondisiFile(file); }}
                   required
@@ -506,7 +520,7 @@ const AlsintanDetail = () => {
                   label="Upload Laporan Pemanfaatan (PDF)"
                   type="file"
                   extensions={["pdf"]}
-                  files={showPemanfaatanExisting ? "/pemanfaatan_dummy.pdf" : undefined}
+                  files={showPemanfaatanExisting ? fileNameOf(currentPemanfaatan?.documentUrl) : undefined}
                   onDelete={() => { setShowPemanfaatanExisting(false); setPemanfaatanFile(null); }}
                   onChange={(file) => { setShowPemanfaatanExisting(false); setPemanfaatanFile(file); }}
                   required
