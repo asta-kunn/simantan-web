@@ -67,11 +67,27 @@ export const allRoutes = [
     roles: [ROLES.PETANI],
   },
   {
+    title: "usulan-cpcl detail",
+    path: "/usulan-cpcl/detail",
+    component: lazy(() => import("@/pages/usulan-cpcl/Detail.jsx")),
+    exact: true,
+    protected: true,
+    roles: [ROLES.PETANI, ROLES.ADMIN],
+  },
+  {
     title: "pengaduan",
     path: "/pengaduan",
     component: lazy(() => import("@/pages/Pengaduan/index.jsx")),
     exact: true,
     protected: true,
     roles: [ROLES.PETANI],
+  },
+  {
+    title: "pengaduan detail",
+    path: "/pengaduan/detail",
+    component: lazy(() => import("@/pages/Pengaduan/Detail.jsx")),
+    exact: true,
+    protected: true,
+    roles: [ROLES.PETANI, ROLES.ADMIN],
   }
 ];

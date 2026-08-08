@@ -171,16 +171,18 @@ const Header = ({ handleDarkMode }) => {
         <div className="flex border-gray-200">
           <div className="flex flex-col justify-center">
             <div className="flex flex-col leading-tight">
-              <b className="text-gray-600 text-sm font-bold">
-                {user ? user.username : ""}
-              </b>
-              <span className="text-primary-normal text-xs  font-semibold ">
-                Administrator
-              </span>
-              <span className="text-gray-400 text-xs">
-                Distanhorbun Kab. bogor
-              </span>
-            </div>
+            <b className="text-gray-600 text-sm font-bold">
+              {user ? user.username : ""}
+            </b>
+            <span className="text-primary-normal text-xs font-semibold">
+              {user?.role || user?.ROLE_CODE 
+                ? (user.role || user.ROLE_CODE).charAt(0).toUpperCase() + (user.role || user.ROLE_CODE).slice(1).toLowerCase() 
+                : "Administrator"}
+            </span>
+            <span className="text-gray-400 text-xs">
+              Distanhorbun Kab. bogor
+            </span>
+          </div>
           </div>
         </div>
 

@@ -84,8 +84,8 @@ const PetaniDashboard = () => {
           <p className="text-muted-foreground text-sm">Pantau pengajuan usulan dan pengaduan Anda</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate('/usulan-cpcl/new')} className="gap-2"><PlusCircle size={16}/> Buat Usulan</Button>
-          <Button onClick={() => navigate('/pengaduan/new')} variant="outline" className="gap-2"><PlusCircle size={16}/> Buat Pengaduan</Button>
+          <Button onClick={() => navigate('/usulan-cpcl')} className="gap-2"><PlusCircle size={16}/> Buat Usulan</Button>
+          <Button onClick={() => navigate('/pengaduan')} variant="outline" className="gap-2"><PlusCircle size={16}/> Buat Pengaduan</Button>
         </div>
       </div>
 

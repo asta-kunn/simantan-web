@@ -159,6 +159,7 @@ const AdminDashboard = () => {
                   <th className="px-6 py-3">Detail</th>
                   {activeTab === "USULAN" && <th className="px-6 py-3">Status Saat Ini</th>}
                   <th className="px-6 py-3 text-center">Aksi / Tanggapan</th>
+                  <th className="px-6 py-3 text-center">Detail</th>
                 </tr>
               )}
             </thead>
@@ -201,6 +202,21 @@ const AdminDashboard = () => {
                         <span className="text-muted-foreground italic">Proses Selesai.</span>
                       )}
                     </td>
+                    <td className="px-6 py-4 text-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2 w-full justify-center"
+                        onClick={() => navigate(`/usulan-cpcl/detail`, {
+                          state: {
+                            id: tiket.id,
+                            masterData: tiket
+                          }
+                        })}
+                      >
+                        <Eye size={14}/> Lihat Detail
+                      </Button>
+                    </td>
                   </tr>
                 ))
               }
@@ -232,6 +248,21 @@ const AdminDashboard = () => {
                           <Button size="sm" className="w-full" onClick={() => handleBalasPengaduan(tiket.id)}>Kirim Balasan</Button>
                         </div>
                       )}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2 w-full justify-center"
+                        onClick={() => navigate(`/pengaduan/detail`, {
+                          state: {
+                            id: tiket.id,
+                            masterData: tiket
+                          }
+                        })}
+                      >
+                        <Eye size={14}/> Lihat Detail
+                      </Button>
                     </td>
                   </tr>
                 ))
